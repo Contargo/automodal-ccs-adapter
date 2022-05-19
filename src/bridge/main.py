@@ -1,8 +1,8 @@
 import time
 
-from src.bridge.mqtt.client import MqttClient
-from src.bridge.sps.client import SpsClient
-from src.bridge.sps.server import SpsServer
+from mqtt.client import MqttClient
+from sps.client import SpsClient
+from sps.server import SpsServer
 
 
 def run() -> None:

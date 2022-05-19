@@ -3,11 +3,20 @@ from threading import Thread, Event
 import snap7
 import time
 
+from snap7.types import wordlen_to_ctypes, S7WLByte, srvAreaPA, srvAreaMK, srvAreaPE, srvAreaDB
+
 
 class SpsServer():
     def __init__(self) -> None:
         self.shutdown_event = Event()
         self.server = snap7.server.Server()
+        self.globaldata = (wordlen_to_ctypes[S7WLByte] * 10)()
+        self.outputs = (wordlen_to_ctypes[S7WLByte] * 10)()
+        self.inputs = (wordlen_to_ctypes[S7WLByte] * 10)()
+        self.db0 = (wordlen_to_ctypes[S7WLByte] * 100)()
+        self.db1 = (wordlen_to_ctypes[S7WLByte] * 100)()
+        self.set_areas()
+        self.generate_data()
         self.server.start()
         self.worker: Thread = Thread(
             target=self.worker,
@@ -17,13 +26,20 @@ class SpsServer():
         )
         self.worker.start()
         print(f"SERVER: is running")
-        
+       
     def generate_data(self):
-        size = 100
-        data = (snap7.types.wordlen_to_ctypes[snap7.types.S7WLByte] * size)()
-        for index in range(size):
-            data[index] = index
-        self.server.register_area(snap7.types.srvAreaDB, 1, data)
+        snap7.util.set_real(self.outputs, 0, 1.234)      # srvAreaPA
+        snap7.util.set_real(self.globaldata, 0, 2.234)   # srvAreaMK
+        snap7.util.set_real(self.inputs, 0, 3.234)       # srvAreaPE
+        snap7.util.set_string(self.db1, 0, value="hello world", max_size=11)
+        snap7.util.set_int(self.db0, 0, 42)
+        
+    def set_areas(self):
+        self.server.register_area(srvAreaPA, 0, self.outputs)
+        self.server.register_area(srvAreaMK, 0, self.globaldata)
+        self.server.register_area(srvAreaPE, 0, self.inputs)
+        self.server.register_area(srvAreaDB, 0, self.db0)
+        self.server.register_area(srvAreaDB, 1, self.db1)
         
         
     def worker(self) -> None:

@@ -17,7 +17,7 @@ class MqttClient():
             client_id="mqtt_sps_bridge"
         )
         
-        
+        self.client.message_callback_add("+/+/zones/danger", self.on_danger)
         self.worker: Thread = Thread(
             target=self.worker,
             args=(),
@@ -25,6 +25,10 @@ class MqttClient():
             daemon=True,
         )
         self.worker.start()
+        
+    def on_danger(self):
+        # update sps client with danger status
+        pass
 
     def worker(self):
         while not self.shutdown_event.is_set():
