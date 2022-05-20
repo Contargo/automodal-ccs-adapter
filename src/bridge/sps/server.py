@@ -17,7 +17,6 @@ class SpsServer():
         self.db1 = (wordlen_to_ctypes[S7WLByte] * 100)()
         self.set_areas()
         self.generate_data()
-        self.server.start()
         self.worker: Thread = Thread(
             target=self.worker,
             args=(),
@@ -25,7 +24,10 @@ class SpsServer():
             daemon=True,
         )
         self.worker.start()
-        print(f"SERVER: is running")
+        
+    def start(self):
+        self.server.start()
+        print(f"SPS_SERVER: is running")
        
     def generate_data(self):
         snap7.util.set_real(self.outputs, 0, 1.234)      # srvAreaPA
@@ -51,6 +53,7 @@ class SpsServer():
         
 
     def shutdown(self) -> None:
+        print("SPS_SERVER: shutdown")
         self.shutdown_event.set()
         self.worker.join()
         self.server.stop()

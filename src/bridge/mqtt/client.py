@@ -1,13 +1,15 @@
+import json
 import time
 from collections import deque
 from threading import Thread, Event, Lock
 from functools import partial
-from typing import Optional, Deque
-
-import snap7
+from typing import Deque, Optional, Union, List
 
 from paho.mqtt.client import MQTT_ERR_SUCCESS, Client, MQTTv5
 from paho.mqtt.properties import Properties
+
+from util.types import Position, MQTT_Topic, MQTT_Payload, SpsQueueItem
+
 
 class MqttClient():
     def __init__(self) -> None:
@@ -17,7 +19,8 @@ class MqttClient():
         self.client = get_client_with_reconnect(
             client_id="mqtt_sps_bridge"
         )
-        self.queue: Deque = deque(maxlen=10)
+        self.queue: Deque = deque(maxlen=1)
+        self.sps_queue: Optional[Deque] = None
         self.queue_lock = Lock()
         
         self.client.message_callback_add("+/+/data/status", self.on_status_update)
@@ -29,24 +32,24 @@ class MqttClient():
         )
         self.worker.start()
         
-    def push_data(self, data):
-        with self.queue_lock:
-            self.queue.append(data)
-        
-    def on_status_update(self):
-        # update sps client with danger status
-        pass
+    def set_sps_queue(self, queue: deque):
+        self.sps_queue: Deque = self.queue
+
+    def on_status_update(self, _: MQTT_Topic, payload: MQTT_Payload) -> None:
+        if isinstance(payload, str):
+            self.sps_queue.append(SpsQueueItem("status", bool(payload)))
 
     def worker(self):
         while not self.shutdown_event.is_set():
             try:
                 with self.queue_lock:
-                    cods_box = self.queue.popleft()
+                    data = self.queue.popleft()
             except IndexError as exception:
                 pass
-            time.sleep(5)
+            time.sleep(0.1)
 
     def shutdown(self) -> None:
+        print("MQTT_CLIENT: shutdown")
         self.shutdown_event.set()
         self.worker.join()
         if self.client is not None:
