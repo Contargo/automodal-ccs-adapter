@@ -1,7 +1,8 @@
 import time
-from threading import Thread, Event
+from collections import deque
+from threading import Thread, Event, Lock
 from functools import partial
-from typing import Optional
+from typing import Optional, Deque
 
 import snap7
 
@@ -16,8 +17,10 @@ class MqttClient():
         self.client = get_client_with_reconnect(
             client_id="mqtt_sps_bridge"
         )
+        self.queue: Deque = deque(maxlen=10)
+        self.queue_lock = Lock()
         
-        self.client.message_callback_add("+/+/zones/danger", self.on_danger)
+        self.client.message_callback_add("+/+/data/status", self.on_status_update)
         self.worker: Thread = Thread(
             target=self.worker,
             args=(),
@@ -26,13 +29,21 @@ class MqttClient():
         )
         self.worker.start()
         
-    def on_danger(self):
+    def push_data(self, data):
+        with self.queue_lock:
+            self.queue.append(data)
+        
+    def on_status_update(self):
         # update sps client with danger status
         pass
 
     def worker(self):
         while not self.shutdown_event.is_set():
-            pass
+            try:
+                with self.queue_lock:
+                    cods_box = self.queue.popleft()
+            except IndexError as exception:
+                pass
             time.sleep(5)
 
     def shutdown(self) -> None:
