@@ -1,4 +1,18 @@
-from typing import NamedTuple, Union, List
+from typing import NamedTuple, Union, List, Type, Any
+
+from snap7.types import Areas
+
+S7Area = Areas
+DBNumber = int
+Address = int
+
+class SPSDataItem(NamedTuple):
+    name: str
+    s7Area: S7Area
+    dbnumber: DBNumber
+    start: Address
+    type: Type
+    value: Any
 
 
 class Position(NamedTuple):

@@ -30,11 +30,9 @@ class SpsServer():
         print(f"SPS_SERVER: is running")
        
     def generate_data(self):
-        snap7.util.set_real(self.outputs, 0, 1.234)      # srvAreaPA
-        snap7.util.set_real(self.globaldata, 0, 2.234)   # srvAreaMK
-        snap7.util.set_real(self.inputs, 0, 3.234)       # srvAreaPE
-        snap7.util.set_string(self.db1, 0, value="hello world", max_size=11)
-        snap7.util.set_int(self.db0, 0, 42)
+        snap7.util.set_real(self.db1, 8, 1.234)      # srvAreaPA
+        snap7.util.set_int(self.db1, 0, 42)
+        snap7.util.set_int(self.db1, 0, 12313)
         
     def set_areas(self):
         self.server.register_area(srvAreaPA, 0, self.outputs)
@@ -48,7 +46,7 @@ class SpsServer():
         while not self.shutdown_event.is_set():
             event = self.server.pick_event()
             if event:
-                print(f"SERVER: {self.server.event_text(event)}")
+                print(f"SPS_SERVER: {self.server.event_text(event)}")
             time.sleep(.01)
         
 
