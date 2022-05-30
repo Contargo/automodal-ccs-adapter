@@ -6,7 +6,7 @@ from typing import Any
 from mqtt.client import MqttClient
 from sps.client import SpsClient
 from sps.server import SpsServer
-
+from ccs.ccs import CCS
 
 def get_args() -> Any:
     parser = ArgumentParser(description="yolo")
@@ -31,6 +31,7 @@ def run() -> None:
     sps_server = SpsServer()
     sps_client = SpsClient(ip=args.ip)
     mqtt_client = MqttClient()
+    ccs = CCS()
     sps_client.set_mqtt_queue(mqtt_client.queue)
     mqtt_client.set_sps_queue(sps_client.queue)
     try:
@@ -43,6 +44,7 @@ def run() -> None:
         mqtt_client.shutdown()
         sps_client.shutdown()
         sps_server.shutdown()
+        ccs.shutdown()
 
 if __name__ == "__main__":
     run()
