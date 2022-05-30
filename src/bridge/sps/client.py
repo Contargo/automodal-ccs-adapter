@@ -62,7 +62,6 @@ class SpsClient():
             except Snap7Exception as exception:
                 self.connect()
                 time.sleep(1)
-                #print(f"SPS_CLIENT: {exception}")
 
     def shutdown(self) -> None:
         print("SPS_CLIENT: shutdown")

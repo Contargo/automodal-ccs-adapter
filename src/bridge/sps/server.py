@@ -25,9 +25,7 @@ class SpsServer():
         )
         self.worker.start()
         
-    def start(self):
-        self.server.start()
-        print(f"SPS_SERVER: is running")
+
        
     def generate_data(self):
         snap7.util.set_real(self.db1, 8, 1.234)      # srvAreaPA
@@ -41,6 +39,9 @@ class SpsServer():
         self.server.register_area(srvAreaDB, 0, self.db0)
         self.server.register_area(srvAreaDB, 1, self.db1)
         
+    def start(self):
+        self.server.start()
+        print(f"SPS_SERVER: is running") 
         
     def worker(self) -> None:
         while not self.shutdown_event.is_set():
@@ -48,7 +49,6 @@ class SpsServer():
             if event:
                 print(f"SPS_SERVER: {self.server.event_text(event)}")
             time.sleep(.01)
-        
 
     def shutdown(self) -> None:
         print("SPS_SERVER: shutdown")
