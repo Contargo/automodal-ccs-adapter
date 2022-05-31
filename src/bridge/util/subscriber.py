@@ -9,8 +9,8 @@ class MqttClientSubscriber(EnforceOverrides):
     @abstractmethod
     def push_collision(self, data: Collision) -> None:
         pass
-    
-    
+
+
 class SPSClientSubscriber(EnforceOverrides):
     @abstractmethod
     def push_position(self, data: Position) -> None:

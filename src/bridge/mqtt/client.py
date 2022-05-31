@@ -8,21 +8,20 @@ from typing import Deque, Optional, Union, List
 from paho.mqtt.client import MQTT_ERR_SUCCESS, Client, MQTTv5
 from paho.mqtt.properties import Properties
 
-from util.types import Position, MQTT_Topic, MQTT_Payload, SpsQueueItem
+from sps.enums import SPSClientQueueMSGs
+from util.types import Position, MQTT_Topic, MQTT_Payload, SpsQueueItem, MqttQueueItem
 
 
-class MqttClient():
+class MqttClient:
     def __init__(self) -> None:
-        
+
         self.shutdown_event = Event()
-        
-        self.client = get_client_with_reconnect(
-            client_id="mqtt_sps_bridge"
-        )
+
+        self.client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
         self.queue: Deque = deque(maxlen=1)
-        self.sps_queue: Optional[Deque] = None
+        self.sps_client_queue: Optional[Deque] = None
         self.queue_lock = Lock()
-        
+
         self.client.message_callback_add("+/+/data/status", self.on_status_update)
         self.worker: Thread = Thread(
             target=self.worker,
@@ -31,19 +30,23 @@ class MqttClient():
             daemon=True,
         )
         self.worker.start()
-        
+
     def set_sps_queue(self, queue: deque):
-        self.sps_queue: Deque = self.queue
+        self.sps_client_queue: Deque = queue
 
     def on_status_update(self, _: MQTT_Topic, payload: MQTT_Payload) -> None:
-        if isinstance(payload, str):
-            self.sps_queue.append(SpsQueueItem("status", bool(payload)))
+        # todo: payload format. Aktuell nur ein Bool ob danger or not
+        if self.sps_client_queue is not None:
+            if isinstance(payload, str):
+                self.sps_client_queue.append(SpsQueueItem("status", bool(payload)))
 
     def worker(self):
         while not self.shutdown_event.is_set():
             try:
                 with self.queue_lock:
-                    data = self.queue.popleft()
+                    data: MqttQueueItem = self.queue.popleft()
+                    # todo: richtiges topic eintragen
+                    self.client.publish(topic=f"sps/asd/{data.meta.topic}", payload=data.data)
             except IndexError as exception:
                 pass
             time.sleep(0.1)
@@ -56,7 +59,7 @@ class MqttClient():
             self.client.loop_stop()
             self.client.disconnect()
 
-        
+
 def get_client_with_reconnect(
     client_id: str = "",
     protocol: int = MQTTv5,
@@ -65,12 +68,8 @@ def get_client_with_reconnect(
     client.on_disconnect = partial(_on_disconnect)
     return client
 
-def _on_disconnect(
-    client: Client,
-    __: None,
-    reason_code: int,
-    ___: Properties
-) -> None:
+
+def _on_disconnect(client: Client, __: None, reason_code: int, ___: Properties) -> None:
     print(  # allowed
         f"reason_code: {reason_code} | "  # pylint: disable=protected-access
         f"MQTT_ERR_SUCCESS: {MQTT_ERR_SUCCESS} | "

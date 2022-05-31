@@ -8,22 +8,15 @@ from sps.client import SpsClient
 from sps.server import SpsServer
 from ccs.ccs import CCS
 
+
 def get_args() -> Any:
     parser = ArgumentParser(description="yolo")
+    parser.add_argument("-s", "--server", action="store_true", help="start demo sps")
     parser.add_argument(
-        "-s",
-        "--server",
-        action="store_true", 
-        help="start demo sps"
-    )
-    parser.add_argument(
-        "-i",
-        "--ip",
-        type=str,
-        default="127.0.0.1",
-        help="start demo sps"
+        "-i", "--ip", type=str, default="127.0.0.1", help="start demo sps"
     )
     return parser.parse_args()
+
 
 def run() -> None:
     args = get_args()
@@ -45,6 +38,7 @@ def run() -> None:
         sps_client.shutdown()
         sps_server.shutdown()
         ccs.shutdown()
+
 
 if __name__ == "__main__":
     run()
