@@ -45,8 +45,7 @@ class MqttClient:
             try:
                 with self.queue_lock:
                     data: MqttQueueItem = self.queue.popleft()
-                    # todo: richtiges topic eintragen
-                    self.client.publish(topic=f"sps/asd/{data.meta.topic}", payload=data.data)
+                    self.client.publish(topic=f"sps/all/data/{data.meta.topic}", payload=data.data)
             except IndexError as exception:
                 pass
             time.sleep(0.1)
