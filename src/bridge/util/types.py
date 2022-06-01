@@ -1,9 +1,8 @@
-from typing import NamedTuple, Union, List, Type, Any
+from typing import NamedTuple, Union, List, Type, Any, Optional
 
 from snap7.types import Areas
 
-from sps.enums import SPSClientQueueMSGs
-from sps.types import SPSClientQueueMSGsMeta
+from sps.types import SPSClientQueueMSGsMeta, spsbool, spsbyte, spsword, spsint, spsdint, spsreal
 
 S7Area = Areas
 DBNumber = int
@@ -17,6 +16,7 @@ class SPSDataItem(NamedTuple):
     start: Address
     type: Type
     value: Any
+    bit_index: Optional[int] = None
 
 
 class Position(NamedTuple):
@@ -26,7 +26,7 @@ class Position(NamedTuple):
 
 class SpsQueueItem(NamedTuple):
     name: str
-    data: Union[bool, int]
+    data: Union[spsbool, spsbyte, spsword, spsint, spsdint, spsreal]
 
 class MqttQueueItem(NamedTuple):
     name: str

@@ -1,8 +1,10 @@
+from builtins import function
 from typing import List, Type, Optional
 
+from sps.types import spsint, spsdint, spsreal, spsbool, spsbyte, spsword
 from util.types import S7Area, DBNumber, SPSDataItem, Address
 from snap7.client import Client
-from snap7.util import get_real, get_int
+from snap7.util import get_real, get_int, get_bool, get_byte, get_word, get_dint
 
 
 class SpsClientData:
@@ -38,18 +40,33 @@ class SpsClientData:
                 value=0,
             )
         )
-
+        
+    def __get_data(self, name: str, type: type):
+        for item in self.data:
+            if item.name == name and item.type == type:
+                return item.value
+        return None
+    
+    def get_bool(self, name: str) -> Optional[SPSDataItem]:
+        return self.__get_data(name, spsbool)
+    
+    def get_byte(self, name: str) -> Optional[SPSDataItem]:
+        return self.__get_data(name, spsbyte)
+    
+    def get_word(self, name: str) -> Optional[SPSDataItem]:
+        return self.__get_data(name, spsword)
+    
     def get_int(self, name: str) -> Optional[SPSDataItem]:
-        for item in self.data:
-            if item.name == name and item.type == int:
-                return item.value
-        return None
+        return self.__get_data(name, spsint)
+    
+    def get_dint(self, name: str) -> Optional[SPSDataItem]:
+        return self.__get_data(name, spsdint)
 
-    def get_float(self, name: str) -> Optional[SPSDataItem]:
-        for item in self.data:
-            if item.name == name and item.type == float:
-                return item.value
-        return None
+    def get_real(self, name: str) -> Optional[SPSDataItem]:
+        return self.__get_data(name, spsreal)
+    
+    
+    
 
     def update_value(self, item: SPSDataItem, value: any):
         new_item = SPSDataItem(
@@ -59,20 +76,34 @@ class SpsClientData:
             dbnumber=item.dbnumber,
             name=item.name,
             value=value,
+            bit_index=item.bit_index
         )
         return new_item
-
+    
+    def __update(self, item: SPSDataItem, nr: int, size: int, func: function):
+        data = self.client.read_area(
+            item.s7Area, dbnumber=item.dbnumber, start=item.start, size=size
+        )
+        if item.type == spsbool:
+            self.data[nr] = self.update_value(item, func(data, 0, item.bit_index))
+            return
+        self.data[nr] = self.update_value(item, func(data, 0))
+        
     def update(self):
         for nr, item in enumerate(self.data):
-            if item.type == int:
-                data = self.client.read_area(
-                    item.s7Area, dbnumber=item.dbnumber, start=item.start, size=4
-                )
-                self.data[nr] = self.update_value(item, get_int(data, 0))
-
-            if item.type == float:
-                data = self.client.read_area(
-                    item.s7Area, dbnumber=item.dbnumber, start=item.start, size=4
-                )
-                self.data[nr] = self.update_value(item, get_real(data, 0))
+            if item.type == spsbool:
+                self.__update(item, nr, 1, get_bool)
+            if item.type == spsbyte:
+                self.__update(item, nr, 1, get_byte)
+            if item.type == spsword:
+                self.__update(item, nr, 2, get_word)
+                
+                
+            if item.type == spsint:
+                self.__update(item, nr, 2, get_int)
+            if item.type == spsdint:
+                self.__update(item, nr, 4, get_dint)
+                
+            if item.type == spsreal:
+                self.__update(item, nr, 4, get_real)
             # print(f"read {item.type=} {item.value=}")
