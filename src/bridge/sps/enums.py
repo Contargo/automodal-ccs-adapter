@@ -1,5 +1,5 @@
-from enum import StrEnum, Enum
-
+from enum import Enum
+from strenum import StrEnum
 from sps.types import SPSClientQueueMSGsMeta
 
 

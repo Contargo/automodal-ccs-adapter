@@ -28,3 +28,4 @@ class DBItem():
     start: int
     name: str
     type: spstypes
+    bit_index: int = 0

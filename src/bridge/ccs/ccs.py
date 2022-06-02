@@ -7,6 +7,7 @@ from flask import Flask, request
 from ccs.enums import CCSFeatureType
 from ccs.helper import generate_metadata, generate_feature
 from ccs.job import CCSJobState
+from sps.client import SpsClient
 
 app = Flask(__name__)
 
@@ -16,7 +17,7 @@ class CCS:
     type: str = "crane"
     name: str = "PSKran"
 
-    def __init__(self, tams_url: str = "http://localhost:9998"):
+    def __init__(self, sps_client: SpsClient, tams_url: str = "http://localhost:9998"):
         self.tams_url = tams_url
         self.app = Flask(
             "ccs",
@@ -24,18 +25,20 @@ class CCS:
         self.state = CCSJobState()
         self.add_endpoints()
         self.worker_rest: Thread = Thread(
-            target=self.start,
+            target=self.rest,
             args=(),
             name="CCS Worker",
             daemon=True,
         )
+        
+    def start(self):
         self.worker_rest.start()
 
     def add_endpoints(self) -> None:
         self.app.add_url_rule("/job", "job", self.job, methods=["POST"])
         self.app.add_url_rule("/details", "details", self.details, methods=["GET"])
 
-    def start(self) -> None:
+    def rest(self) -> None:
         self.app.run(host="127.0.0.1", port=9999)
 
     def job(self, *args, **kwargs) -> Any:

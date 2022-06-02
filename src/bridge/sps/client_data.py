@@ -29,7 +29,7 @@ class SpsClientData:
         self.dbnumber = dbnumber
         self.client = client
 
-    def define_data(self, start: Address, name: str, type: type) -> None:
+    def define_data(self, start: Address, name: str, type: type, bit_index: int = 0) -> None:
         self.data.append(
             SPSDataItem(
                 s7Area=self.area,
@@ -38,6 +38,7 @@ class SpsClientData:
                 dbnumber=self.dbnumber,
                 name=name,
                 value=0,
+                bit_index=bit_index
             )
         )
 

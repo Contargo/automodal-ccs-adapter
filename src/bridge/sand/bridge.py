@@ -8,19 +8,18 @@ from typing import Deque, Optional, Union, List
 from paho.mqtt.client import MQTT_ERR_SUCCESS, Client, MQTTv5
 from paho.mqtt.properties import Properties
 
+from sps.client import SpsClient
 from sps.enums import SPSClientQueueMSGs
 from util.types import Position, MQTT_Topic, MQTT_Payload, SpsQueueItem, MqttQueueItem
 
 
-class MqttClient:
-    def __init__(self) -> None:
+class SandBridge:
+    def __init__(self, sps_client: SpsClient) -> None:
 
+        self.sps_client = sps_client
         self.shutdown_event = Event()
 
         self.client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
-        self.queue: Deque = deque(maxlen=1)
-        self.sps_client_queue: Optional[Deque] = None
-        self.queue_lock = Lock()
 
         self.client.message_callback_add("+/+/data/status", self.on_status_update)
         self.worker: Thread = Thread(
@@ -29,6 +28,8 @@ class MqttClient:
             name="sps worker",
             daemon=True,
         )
+        
+    def start(self):
         self.worker.start()
 
     def set_sps_queue(self, queue: deque):
@@ -42,15 +43,7 @@ class MqttClient:
 
     def worker(self):
         while not self.shutdown_event.is_set():
-            try:
-                with self.queue_lock:
-                    data: MqttQueueItem = self.queue.popleft()
-                    self.client.publish(
-                        topic=f"sps/all/data/{data.meta.topic}", payload=data.data
-                    )
-            except IndexError as exception:
-                pass
-            time.sleep(0.1)
+            time.sleep(1)
 
     def shutdown(self) -> None:
         print("MQTT_CLIENT: shutdown")
