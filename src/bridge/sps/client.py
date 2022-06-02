@@ -1,16 +1,22 @@
 import time
 from collections import deque
 from threading import Thread, Event, Lock
-from typing import Deque, Optional
+from typing import Deque, Optional, List
 
 from snap7.client import Client
 from snap7.types import Areas, S7AreaMK, S7AreaPA, S7AreaPE, S7AreaDB
 from snap7.exceptions import Snap7Exception
 
 from sps.client_data import SpsClientData
+from sps.data import db_items
+from sps.types import spsint, spsreal, spstypes
+from util.types import SpsQueueItem
 
 
 class SpsClient:
+
+    __db: List[SpsClientData] = []
+
     def __init__(self, ip: str = "127.0.0.1") -> None:
 
         self.shutdown_event = Event()
@@ -20,6 +26,7 @@ class SpsClient:
         self.ip = ip
         self.connect()
         self.db1 = SpsClientData(Areas(S7AreaDB), dbnumber=1, client=self.client)
+        self.__db.append(self.db1)
         self.define_data()
         self.worker: Thread = Thread(
             target=self.worker,
@@ -30,24 +37,36 @@ class SpsClient:
         self.worker.start()
 
     def define_data(self):
-        self.db1.define_int(start=0, name="SomeInteger")
-        self.db1.define_int(start=4, name="2Integer")
-        self.db1.define_float(start=8, name="float1")
+        for item in db_items:
+            for db in self.__db:
+                if db.dbnumber == item.dbnumber:
+                    db.define_data(name=item.name, start=item.start, type=item.type)
 
     def get_data(self):
-        # todo: slow down update? 
-        self.db1.update()
+        # todo: slow down update?
+        for db in self.__db:
+            db.update()
         print(f"SPS_CLIENT db0 int: {self.db1.get_int('SomeInteger')}")
-        print(f"SPS_CLIENT db0 float: {self.db1.get_float('float1')}")
+        print(f"SPS_CLIENT db0 float: {self.db1.get_real('float1')}")
         print(f"SPS_CLIENT db0 float as int: {self.db1.get_int('float1')}")
-        
-        
-    def write_data(self, data):
-        pass
-        # todo: please implement me!
+
+    def write_queue_item(self, data: SpsQueueItem):
+        for db in self.__db:
+            if db.has_key(data.name):
+                db.write(data.name, data.data)
+                
+    def write_item(self, name: str, value: spstypes):
+        for db in self.__db:
+            if db.has_key(name):
+                db.write(name, value)  
+                
+    def read_value(self, name: str, type: type):
+        for db in self.__db:
+            if db.has_key(name):
+                return db.read(name, type)
 
     def set_mqtt_queue(self, queue: deque):
-        self.mqtt_client_queue: Deque = self.queue
+        self.mqtt_client_queue: Deque = queue
 
     def connect(self):
         try:
@@ -59,8 +78,8 @@ class SpsClient:
         while not self.shutdown_event.is_set():
             try:
                 try:
-                    data = self.queue.popleft()
-                    self.write_data(data)
+                    data: SpsQueueItem = self.mqtt_client_queue.popleft()
+                    self.write_queue_item(data)
                 except IndexError as exception:
                     pass
                 self.get_data()

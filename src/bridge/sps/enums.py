@@ -11,16 +11,10 @@ class SPSStatus(StrEnum):
 
 
 class SPSClientQueueMSGs(Enum):
-    KATZ_POSITION = SPSClientQueueMSGsMeta(
-        name="katz_position",
-        topic="katz_position"
-    )
+    KATZ_POSITION = SPSClientQueueMSGsMeta(name="katz_position", topic="katz_position")
     CRANE_POSITION = SPSClientQueueMSGsMeta(
-        name="crane_position",
-        topic="crane_position"
+        name="crane_position", topic="crane_position"
     )
     SPREADER_POSITION = SPSClientQueueMSGsMeta(
-        name="spreader_position",
-        topic="spreader_position"
+        name="spreader_position", topic="spreader_position"
     )
-    

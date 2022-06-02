@@ -53,13 +53,15 @@ class CCS:
         return "unknown error", 500
 
     def send_status(self):
-        ret = requests.post(f"{self.tams_url}/state", json=self.state.get_state_as_json())
+        ret = requests.post(
+            f"{self.tams_url}/state", json=self.state.get_state_as_json()
+        )
         if ret == "OK":
             print("juhu")
-            
+
     def send_alarm(self):
         pass
-    
+
     def send_metric(self):
         pass
 

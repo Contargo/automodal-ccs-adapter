@@ -2,7 +2,15 @@ from typing import NamedTuple, Union, List, Type, Any, Optional
 
 from snap7.types import Areas
 
-from sps.types import SPSClientQueueMSGsMeta, spsbool, spsbyte, spsword, spsint, spsdint, spsreal
+from sps.types import (
+    SPSClientQueueMSGsMeta,
+    spsbool,
+    spsbyte,
+    spsword,
+    spsint,
+    spsdint,
+    spsreal, spstypes,
+)
 
 S7Area = Areas
 DBNumber = int
@@ -26,12 +34,14 @@ class Position(NamedTuple):
 
 class SpsQueueItem(NamedTuple):
     name: str
-    data: Union[spsbool, spsbyte, spsword, spsint, spsdint, spsreal]
+    data: Union[spstypes]
+
 
 class MqttQueueItem(NamedTuple):
     name: str
     meta: SPSClientQueueMSGsMeta
     data: Union[bool, int, Position]
+
 
 Collision = bool
 
