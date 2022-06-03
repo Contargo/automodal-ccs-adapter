@@ -1,16 +1,13 @@
-import json
 import time
-from collections import deque
-from threading import Thread, Event, Lock
 from functools import partial
-from typing import Deque, Optional, Union, List
+from threading import Thread, Event
 
 from paho.mqtt.client import MQTT_ERR_SUCCESS, Client, MQTTv5
 from paho.mqtt.properties import Properties
 
 from sps.client import SpsClient
-from sps.enums import SPSClientQueueMSGs
-from util.types import Position, MQTT_Topic, MQTT_Payload, SpsQueueItem, MqttQueueItem
+from sps.types import spsreal
+from util.types import MQTT_Topic, MQTT_Payload
 
 
 class SandBridge:
@@ -21,7 +18,7 @@ class SandBridge:
 
         self.client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
 
-        self.client.message_callback_add("+/+/data/status", self.on_status_update)
+        self.client.message_callback_add("+/+/data/collision", self.on_collision_update)
         self.worker: Thread = Thread(
             target=self.worker,
             args=(),
@@ -32,17 +29,20 @@ class SandBridge:
     def start(self):
         self.worker.start()
 
-    def set_sps_queue(self, queue: deque):
-        self.sps_client_queue: Deque = queue
-
-    def on_status_update(self, _: MQTT_Topic, payload: MQTT_Payload) -> None:
+    def on_collision_update(self, _: MQTT_Topic, payload: MQTT_Payload) -> None:
         # todo: payload format. Aktuell nur ein Bool ob danger or not
-        if self.sps_client_queue is not None:
-            if isinstance(payload, str):
-                self.sps_client_queue.append(SpsQueueItem("status", bool(payload)))
+        self.sps_client.write_item("collision_status", value=bool(payload))
 
     def worker(self):
         while not self.shutdown_event.is_set():
+            katz = self.sps_client.read_value("katz_position", spsreal)
+            crane = self.sps_client.read_value("crane_position", spsreal)
+            spreader = self.sps_client.read_value("spreader_position", spsreal)
+            self.client.publish(topic="bridge/all/data/position", payload=str({
+                "katz_position": katz, 
+                "crane_position": crane,
+                "spreader_position": spreader
+            }))
             time.sleep(1)
 
     def shutdown(self) -> None:

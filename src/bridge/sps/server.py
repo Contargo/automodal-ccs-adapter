@@ -55,7 +55,7 @@ class SpsServer:
             if item.type is spsint:
                 set_int(self.__dbs[item.dbnumber], item.start, self.__random(item.type)) 
             if item.type is spsbool:
-                set_bool(self.__dbs[item.dbnumber], item.start, item.bit_index, item.self.__random(item.type)) 
+                set_bool(self.__dbs[item.dbnumber], item.start, item.bit_index, self.__random(item.type)) 
                 
     def set_areas(self):
         self.server.register_area(srvAreaPA, 0, self.outputs)

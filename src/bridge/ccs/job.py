@@ -65,6 +65,9 @@ class CCSJobState:
             self.__job_status = CCSJobStatus.INPROGRESS
             return "OK"
         return "has job"
+    
+    def job_done(self):
+        self.__job_status = CCSJobStatus.DONE
 
     def get_state_as_json(self):
         return dataclass_to_json(

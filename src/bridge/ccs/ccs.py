@@ -1,13 +1,15 @@
+import time
 from threading import Thread
 from typing import Any
 
 import requests
 from flask import Flask, request
 
-from ccs.enums import CCSFeatureType
+from ccs.enums import CCSFeatureType, CCSJobStatus
 from ccs.helper import generate_metadata, generate_feature
 from ccs.job import CCSJobState
 from sps.client import SpsClient
+from sps.types import spsbyte
 
 app = Flask(__name__)
 
@@ -18,6 +20,7 @@ class CCS:
     name: str = "PSKran"
 
     def __init__(self, sps_client: SpsClient, tams_url: str = "http://localhost:9998"):
+        self.sps_client = sps_client
         self.tams_url = tams_url
         self.app = Flask(
             "ccs",
@@ -26,6 +29,14 @@ class CCS:
         self.add_endpoints()
         self.worker_rest: Thread = Thread(
             target=self.rest,
+            args=(),
+            name="CCS Worker",
+            daemon=True,
+        )
+        
+        
+        self.worker_sps: Thread = Thread(
+            target=self.sps,
             args=(),
             name="CCS Worker",
             daemon=True,
@@ -41,6 +52,14 @@ class CCS:
     def rest(self) -> None:
         self.app.run(host="127.0.0.1", port=9999)
 
+    def sps(self) -> None:
+        status = self.sps_client.read_value("job_status", spsbyte)
+        if status == 0x01:
+            self.state.job_done()
+            # delete old job (and send done status to tams)
+        time.sleep(0.1)
+        
+        
     def job(self, *args, **kwargs) -> Any:
         print(f"{args=}")
         print(f"{kwargs=}")
