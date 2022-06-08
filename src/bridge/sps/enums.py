@@ -1,6 +1,6 @@
 from enum import Enum
 from strenum import StrEnum
-from sps.types import SPSClientQueueMSGsMeta
+from bridge.sps.types import SPSClientQueueMSGsMeta
 
 
 class SPSStatus(StrEnum):

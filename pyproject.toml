@@ -1,11 +1,10 @@
 [tool.poetry]
-name = "cods"
-version = "0.1.1-alpha.0"
+name = "sps-bridge"
+version = "0.0.1"
 description = ""
 authors = [
     "Moritz Sauter <sauter@synyx.de>",
     "David Bauer <bauer@synyx.de>",
-    "Maximilian Otten <maximilian.otten@iml.fraunhofer.de>"
 ]
 license = "MIT"
 readme = "README.md"
@@ -17,16 +16,18 @@ python-snap7 = "^1.1"
 overrides = "^6.1.0"
 Flask = "^2.1.2"
 dataclasses-json = "^0.5.7"
+types-requests = "^2.27.30"
 StrEnum = "^0.4.7"
 
 
 [tool.poetry.dev-dependencies]
 docker-compose = "1.29.2"
 black = "22.3.0"
-mypy = "0.950"
+mypy = "0.961"
 pylint = "2.13.8"
 pyupgrade = "2.32.1"
 isort = "5.10.1"
+pytest = "^7.1.2"
 
 [build-system]
 requires = ["poetry_core>=1.0.0", "setuptools"]
@@ -101,5 +102,7 @@ disallow_untyped_calls = true
 module = [
     "prctl",
     "paho.*",
+    "snap7.*",
+    "strenum"
 ]
 ignore_missing_imports = true

@@ -5,11 +5,11 @@ from typing import Any
 import requests
 from flask import Flask, request
 
-from ccs.enums import CCSFeatureType, CCSJobStatus
-from ccs.helper import generate_metadata, generate_feature
-from ccs.job import CCSJobState
-from sps.client import SpsClient
-from sps.types import spsbyte
+from bridge.ccs.enums import CCSFeatureType
+from bridge.ccs.helper import generate_metadata, generate_feature
+from bridge.ccs.job import CCSJobState
+from bridge.sps.client import SpsClient
+from bridge.sps.types import spsbyte
 
 app = Flask(__name__)
 
@@ -33,16 +33,15 @@ class CCS:
             name="CCS Worker",
             daemon=True,
         )
-        
-        
+
         self.worker_sps: Thread = Thread(
             target=self.sps,
             args=(),
             name="CCS Worker",
             daemon=True,
         )
-        
-    def start(self):
+
+    def start(self) -> None:
         self.worker_rest.start()
 
     def add_endpoints(self) -> None:
@@ -58,13 +57,13 @@ class CCS:
             self.state.job_done()
             # delete old job (and send done status to tams)
         time.sleep(0.1)
-        
-        
-    def job(self, *args, **kwargs) -> Any:
+
+
+    def job(self, *args, **kwargs) -> Any: # type: ignore
         print(f"{args=}")
         print(f"{kwargs=}")
 
-        ret = self.state.set_new_job(request.json)
+        ret = self.state.set_new_job(str(request.json))
 
         if ret == "invalid":
             return "Invalid input", 405
@@ -74,17 +73,17 @@ class CCS:
             return "OK", 200
         return "unknown error", 500
 
-    def send_status(self):
+    def send_status(self) -> None:
         ret = requests.post(
             f"{self.tams_url}/state", json=self.state.get_state_as_json()
         )
         if ret == "OK":
             print("juhu")
 
-    def send_alarm(self):
+    def send_alarm(self) -> None:
         pass
 
-    def send_metric(self):
+    def send_metric(self) -> None:
         pass
 
     @staticmethod
@@ -94,5 +93,5 @@ class CCS:
             "feature": [generate_feature(CCSFeatureType.FINAL_LANDING)],
         }, 200
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         pass

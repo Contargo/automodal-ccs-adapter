@@ -1,6 +1,6 @@
 from strenum import StrEnum
 
-seaport = "seaport"
+seaport = "seaport"  # pylint: disable=invalid-name
 
 
 class CSSSiteType(StrEnum):

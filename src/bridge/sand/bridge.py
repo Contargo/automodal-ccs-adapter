@@ -5,9 +5,9 @@ from threading import Thread, Event
 from paho.mqtt.client import MQTT_ERR_SUCCESS, Client, MQTTv5
 from paho.mqtt.properties import Properties
 
-from sps.client import SpsClient
-from sps.types import spsreal
-from util.types import MQTT_Topic, MQTT_Payload
+from bridge.sps.client import SpsClient
+from bridge.sps.types import spsreal
+from bridge.util.types import MQTT_Topic, MQTT_Payload
 
 
 class SandBridge:
@@ -19,36 +19,41 @@ class SandBridge:
         self.client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
 
         self.client.message_callback_add("+/+/data/collision", self.on_collision_update)
-        self.worker: Thread = Thread(
+        self.worker_thread: Thread = Thread(
             target=self.worker,
             args=(),
             name="sps worker",
             daemon=True,
         )
-        
-    def start(self):
-        self.worker.start()
+
+    def start(self) -> None:
+        self.worker_thread.start()
 
     def on_collision_update(self, _: MQTT_Topic, payload: MQTT_Payload) -> None:
         # todo: payload format. Aktuell nur ein Bool ob danger or not
         self.sps_client.write_item("collision_status", value=bool(payload))
 
-    def worker(self):
+    def worker(self) -> None:
         while not self.shutdown_event.is_set():
             katz = self.sps_client.read_value("katz_position", spsreal)
             crane = self.sps_client.read_value("crane_position", spsreal)
             spreader = self.sps_client.read_value("spreader_position", spsreal)
-            self.client.publish(topic="bridge/all/data/position", payload=str({
-                "katz_position": katz, 
-                "crane_position": crane,
-                "spreader_position": spreader
-            }))
+            self.client.publish(
+                topic="bridge/all/data/position",
+                payload=str(
+                    {
+                        "katz_position": katz,
+                        "crane_position": crane,
+                        "spreader_position": spreader,
+                    }
+                ),
+            )
             time.sleep(1)
 
     def shutdown(self) -> None:
         print("MQTT_CLIENT: shutdown")
         self.shutdown_event.set()
-        self.worker.join()
+        self.worker_thread.join()
         if self.client is not None:
             self.client.loop_stop()
             self.client.disconnect()

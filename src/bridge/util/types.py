@@ -1,30 +1,25 @@
-from typing import NamedTuple, Union, List, Type, Any, Optional
+from dataclasses import dataclass
+from typing import NamedTuple, Union, List, Optional, Type, Generic
 
 from snap7.types import Areas
 
-from sps.types import (
+from bridge.sps.types import (
     SPSClientQueueMSGsMeta,
-    spsbool,
-    spsbyte,
-    spsword,
-    spsint,
-    spsdint,
-    spsreal, spstypes,
+    spstypes, spstypevar,
 )
 
-S7Area = Areas
 DBNumber = int
 Address = int
 
-
-class SPSDataItem(NamedTuple):
+@dataclass
+class SPSDataItem(Generic[spstypevar]):
     name: str
-    s7Area: S7Area
+    s7Area: Areas
     dbnumber: DBNumber
     start: Address
-    type: Type
-    value: Any
-    bit_index: Optional[int] = None
+    type: type[spstypevar]
+    value: spstypevar
+    bit_index: int = 0
 
 
 class Position(NamedTuple):
@@ -34,16 +29,16 @@ class Position(NamedTuple):
 
 class SpsQueueItem(NamedTuple):
     name: str
-    data: Union[spstypes]
+    data: spstypes
 
 
 class MqttQueueItem(NamedTuple):
     name: str
     meta: SPSClientQueueMSGsMeta
-    data: Union[bool, int, Position]
+    data: bool | int | Position
 
 
 Collision = bool
 
-MQTT_Topic = str
-MQTT_Payload = Union[List[str], str]
+MQTT_Topic = str  # pylint: disable=invalid-name
+MQTT_Payload = Union[list[str], str]  # pylint: disable=invalid-name

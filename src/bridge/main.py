@@ -1,12 +1,12 @@
 import time
 from argparse import ArgumentParser
-from logging import getLogger, WARNING, CRITICAL
+from logging import getLogger, CRITICAL
 from typing import Any
 
-from sand.bridge import SandBridge
-from sps.client import SpsClient
-from sps.server import SpsServer
-from ccs.ccs import CCS
+from bridge.ccs.ccs import CCS
+from bridge.sand.bridge import SandBridge
+from bridge.sps.client import SpsClient
+from bridge.sps.server import SpsServer
 
 
 def get_args() -> Any:
@@ -22,14 +22,14 @@ def run() -> None:
     args = get_args()
     getLogger("snap7").setLevel(CRITICAL)
     sps_server = SpsServer()
-    sps_client = SpsClient(ip=args.ip)
+    sps_client = SpsClient(ip_address=args.ip)
     sand_bridge = SandBridge(sps_client)
     ccs = CCS(sps_client)
     try:
         if args.server:
             print("Start SERVER")
             sps_server.start()
-        if args.ccs: 
+        if args.ccs:
             ccs.start()
         if args.sand:
             sand_bridge.start()

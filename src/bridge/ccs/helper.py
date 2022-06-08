@@ -1,23 +1,20 @@
 import dataclasses
 import json
-import uuid
-from datetime import datetime
 
-from ccs.enums import CCSFeatureType
-from ccs.types import CCSEvent, CCSFeature
+from bridge.ccs.types import CCSEvent, CCSFeature
 
 
-def dataclass_to_json(object: dataclasses.dataclass):
-    return json.dumps(dataclasses.asdict(object))
+def dataclass_to_json(datablass_object) -> str: # type: ignore
+    return json.dumps(dataclasses.asdict(datablass_object))
 
 
-def generate_metadata(type: str):
-    return dataclass_to_json(CCSEvent(type=f"net.contargo.logistics.tams.{type}"))
+def generate_metadata(type_str: str) -> str:
+    return dataclass_to_json(CCSEvent(type=f"net.contargo.logistics.tams.{type_str}"))
 
 
-def generate_feature(type: CCSFeatureType):
+def generate_feature(feature_type: str) -> str:
     return dataclass_to_json(
         CCSFeature(
-            type=type,
+            type=feature_type,
         )
     )
