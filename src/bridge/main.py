@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from logging import getLogger, CRITICAL
 from typing import Any
 
-from bridge.ccs.ccs import CCS
+from bridge.tams.tams import CCS
 from bridge.sand.bridge import SandBridge
 from bridge.sps.client import SpsClient
 from bridge.sps.server import SpsServer
@@ -20,6 +20,7 @@ def get_args() -> Any:
 
 def run() -> None:
     args = get_args()
+    print(f"{args=}")
     getLogger("snap7").setLevel(CRITICAL)
     sps_server = SpsServer()
     sps_client = SpsClient(ip_address=args.ip)
@@ -29,6 +30,8 @@ def run() -> None:
         if args.server:
             print("Start SERVER")
             sps_server.start()
+        sps_client.connect()
+        sps_client.start()
         if args.ccs:
             ccs.start()
         if args.sand:

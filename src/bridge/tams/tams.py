@@ -1,17 +1,16 @@
 import time
-from threading import Thread
+from threading import Thread, Event
 from typing import Any
 
 import requests
 from flask import Flask, request
 
-from bridge.ccs.enums import CCSFeatureType
-from bridge.ccs.helper import generate_metadata, generate_feature
-from bridge.ccs.job import CCSJobState
+from bridge.tams.enums import CCSFeatureType
+from bridge.tams.helper import generate_metadata, generate_feature, dataclass_to_json
+from bridge.tams.job import CCSJobState
 from bridge.sps.client import SpsClient
 from bridge.sps.types import spsbyte
-
-app = Flask(__name__)
+from bridge.tams.types import CCSCraneDetails, CCSEvent, CCSFeature
 
 
 class CCS:
@@ -22,6 +21,7 @@ class CCS:
     def __init__(self, sps_client: SpsClient, tams_url: str = "http://localhost:9998"):
         self.sps_client = sps_client
         self.tams_url = tams_url
+        self.shutdown_event = Event()
         self.app = Flask(
             "ccs",
         )
@@ -40,6 +40,13 @@ class CCS:
             name="CCS Worker",
             daemon=True,
         )
+        
+        self.worker_sps: Thread = Thread(
+            target=self.sps,
+            args=(),
+            name="CCS Worker",
+            daemon=True,
+        )
 
     def start(self) -> None:
         self.worker_rest.start()
@@ -52,12 +59,18 @@ class CCS:
         self.app.run(host="127.0.0.1", port=9999)
 
     def sps(self) -> None:
-        status = self.sps_client.read_value("job_status", spsbyte)
-        if status == 0x01:
-            self.state.job_done()
-            # delete old job (and send done status to tams)
-        time.sleep(0.1)
+        while not self.shutdown_event.is_set():
+            status = self.sps_client.read_value("job_status", spsbyte)
+            if status == 0x01:
+                self.state.job_done()
+                # delete old job (and send done status to tams)
+            time.sleep(0.1)
 
+    def ccs(self):
+        while not self.shutdown_event.is_set():
+            self.send_status()
+            time.sleep(1)
+        
 
     def job(self, *args, **kwargs) -> Any: # type: ignore
         print(f"{args=}")
@@ -65,6 +78,7 @@ class CCS:
 
         ret = self.state.set_new_job(str(request.json))
 
+        print(f"TAMS job: {ret}")
         if ret == "invalid":
             return "Invalid input", 405
         if ret == "has job":
@@ -81,17 +95,27 @@ class CCS:
             print("juhu")
 
     def send_alarm(self) -> None:
-        pass
+        ret = requests.post(
+            f"{self.tams_url}/alarm", json={}
+        )
+        if ret == "OK":
+            print("juhu")
 
     def send_metric(self) -> None:
-        pass
+        ret = requests.post(
+            f"{self.tams_url}/metric", json={}
+        )
+        if ret == "OK":
+            print("juhu")
 
     @staticmethod
     def details() -> Any:
-        return {
-            "event": generate_metadata("details"),
-            "feature": [generate_feature(CCSFeatureType.FINAL_LANDING)],
-        }, 200
+        details = CCSCraneDetails()
+        details.event = CCSEvent(type=f"net.contargo.logistics.tams.details")
+        details.feature = [CCSFeature(
+            type=CCSFeatureType.FINAL_LANDING,
+        )]
+        return dataclass_to_json(details), 200
 
     def shutdown(self) -> None:
-        pass
+        self.shutdown_event.set()

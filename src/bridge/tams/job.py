@@ -5,9 +5,9 @@ from typing import NamedTuple, Type, Any, Optional
 from dataclasses_json import dataclass_json
 from marshmallow import ValidationError
 from snap7.types import Areas
-from bridge.ccs.enums import CCSJobType, CCSJobStatus
-from bridge.ccs.helper import dataclass_to_json
-from bridge.ccs.types import CCSJob, CCSUnit, CCSEvent
+from bridge.tams.enums import CCSJobType, CCSJobStatus
+from bridge.tams.helper import dataclass_to_json
+from bridge.tams.types import CCSJob, CCSUnit, CCSEvent
 from bridge.sps.enums import SPSStatus
 from bridge.util.types import DBNumber, Address
 

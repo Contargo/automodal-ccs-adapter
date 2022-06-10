@@ -4,7 +4,7 @@ from datetime import datetime
 
 from dataclasses_json import dataclass_json
 
-from bridge.ccs.enums import CCSJobType, CSSSiteType, CCSFeatureType
+from bridge.tams.enums import CCSJobType, CSSSiteType, CCSFeatureType
 
 
 def guid() -> str:
@@ -13,6 +13,7 @@ def guid() -> str:
 
 def timestamp() -> str:
     return datetime.now().isoformat()
+
 
 
 @dataclass_json
@@ -67,3 +68,11 @@ class CCSFeature:
     type: str = CCSFeatureType.FINAL_LANDING
     vendor: str = "GAGA Hühnerhof AG"
     version: str = "v1"
+
+@dataclass_json
+@dataclass
+class CCSCraneDetails:
+    # in mm
+    event: str = field(default_factory=CCSEvent)
+    feature: list[CCSFeatureType] = field(default_factory=list)
+

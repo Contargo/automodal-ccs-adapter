@@ -1,11 +1,11 @@
 import requests
 
-from bridge.ccs.helper import dataclass_to_json
-from bridge.ccs.types import CCSJob
+from bridge.tams.helper import dataclass_to_json
+from bridge.tams.types import CCSJob
 
-url = "http://localhost:9999/job"  # pylint: disable=invalid-name
+url = "http://localhost:80/job"  # pylint: disable=invalid-name
 
-data = dataclass_to_json(CCSJob())
+data = CCSJob().to_json()
 
 x = requests.post(url, json=data)
 

@@ -41,7 +41,7 @@ class SpsServer:
         
     def generate_data(self) -> None:
         for item in db_items:
-            print(f"{item=}")
+            print(f"SERVER: {item=}")
             if item.type is spsreal:
                 set_real(
                     self.__dbs[item.dbnumber], item.start, round(uniform(0, 99), 2)
@@ -67,14 +67,14 @@ class SpsServer:
                 self.__dbs[item.dbnumber] = sps_db
 
     def start(self) -> None:
-        self.server.start()
         print("SPS_SERVER: is running")
+        self.server.start()
 
     def worker(self) -> None:
         while not self.shutdown_event.is_set():
             event = self.server.pick_event()
-            # if event:
-            # print(f"SPS_SERVER: {self.server.event_text(event)}")
+            #if event:
+            #    print(f"SPS_SERVER: {self.server.event_text(event)}")
             time.sleep(0.01)
 
     def shutdown(self) -> None:

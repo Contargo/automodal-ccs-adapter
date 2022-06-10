@@ -22,7 +22,6 @@ class SpsClient:
         self.client = Client()
         self.lock = Lock()
         self.ip_address = ip_address
-        self.connect()
         self.db1 = SpsClientData(Areas(S7AreaDB), dbnumber=1, client=self.client)
         self.__db.append(self.db1)
         self.define_data()
@@ -32,6 +31,8 @@ class SpsClient:
             name="sps worker",
             daemon=True,
         )
+        
+    def start(self):
         self.worker_thread.start()
 
     def define_data(self) -> None:
@@ -65,7 +66,8 @@ class SpsClient:
 
     def connect(self) -> None:
         try:
-            self.client.connect(self.ip_address, 0, 1)
+            print(f"CLIENT: {self.ip_address=}")
+            self.client.connect(self.ip_address, 0, 2)
         except Snap7Exception as exception:
             print(f"SPS_CLIENT: {exception}")
 
@@ -75,6 +77,10 @@ class SpsClient:
                 self.update_data()
                 time.sleep(1)
             except Snap7Exception as _:
+                self.connect()
+                time.sleep(1)
+            except RuntimeError as _:
+                print("Runtimeerror")
                 self.connect()
                 time.sleep(1)
 

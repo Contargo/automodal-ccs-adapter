@@ -1,11 +1,11 @@
 import dataclasses
 import json
 
-from bridge.ccs.types import CCSEvent, CCSFeature
+from bridge.tams.types import CCSEvent, CCSFeature
 
 
 def dataclass_to_json(datablass_object) -> str: # type: ignore
-    return json.dumps(dataclasses.asdict(datablass_object))
+    return datablass_object.to_json()
 
 
 def generate_metadata(type_str: str) -> str:

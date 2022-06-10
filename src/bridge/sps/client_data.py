@@ -2,6 +2,7 @@ from functools import partial
 from typing import List, Optional, Callable, Type, Any
 
 from snap7.client import Client
+from snap7.exceptions import Snap7Exception
 from snap7.util import (
     get_real,
     get_int,
@@ -78,11 +79,13 @@ class SpsClientData:
         size: int,
         func: Callable[[bytearray, int], spstypevar],
     ) -> None:
-        data = self.client.read_area(
-            item.s7Area, dbnumber=item.dbnumber, start=item.start, size=size
-        )
-        self.data[number].value = func(data, 0)
-
+        try:
+            data = self.client.read_area(
+                item.s7Area, dbnumber=item.dbnumber, start=item.start, size=size
+            )
+            self.data[number].value = func(data, 0)
+        except Snap7Exception as _:
+            pass
 
     def __write_bool_to_sps(
         self,
@@ -97,13 +100,16 @@ class SpsClientData:
             item.bit_index,
             item.value,
         )
-        self.client.write_area(
-            area=item.s7Area,
-            dbnumber=item.dbnumber,
-            start=item.start,
-            data=data,
-        )
-
+        try:
+            self.client.write_area(
+                area=item.s7Area,
+                dbnumber=item.dbnumber,
+                start=item.start,
+                data=data,
+            )
+        except Snap7Exception as _:
+            pass
+        
     def update_from_sps(self) -> None:
         for number, item in enumerate(self.data):
             if item.type == spsbool:
