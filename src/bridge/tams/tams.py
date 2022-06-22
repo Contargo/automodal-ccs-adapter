@@ -1,9 +1,11 @@
 import time
+from random import random
 from threading import Thread, Event
 from typing import Any
 
 import requests
 from flask import Flask, request
+from requests import ConnectionError
 
 from bridge.tams.enums import CCSFeatureType
 from bridge.tams.helper import generate_metadata, generate_feature, dataclass_to_json
@@ -41,8 +43,8 @@ class CCS:
             daemon=True,
         )
         
-        self.worker_sps: Thread = Thread(
-            target=self.sps,
+        self.worker_ccs: Thread = Thread(
+            target=self.ccs,
             args=(),
             name="CCS Worker",
             daemon=True,
@@ -50,9 +52,12 @@ class CCS:
 
     def start(self) -> None:
         self.worker_rest.start()
+        self.worker_sps.start()
+        self.worker_ccs.start()
 
     def add_endpoints(self) -> None:
-        self.app.add_url_rule("/job", "job", self.job, methods=["POST"])
+        self.app.add_url_rule("/job", "job_post", self.job_post, methods=["POST"])
+        self.app.add_url_rule("/job", "job_get", self.job_get, methods=["GET"])
         self.app.add_url_rule("/details", "details", self.details, methods=["GET"])
 
     def rest(self) -> None:
@@ -70,12 +75,11 @@ class CCS:
         while not self.shutdown_event.is_set():
             self.send_status()
             time.sleep(1)
+            if random() > 0.95:
+                self.state.job_done()
         
 
-    def job(self, *args, **kwargs) -> Any: # type: ignore
-        print(f"{args=}")
-        print(f"{kwargs=}")
-
+    def job_post(self, *args, **kwargs) -> Any: # type: ignore
         ret = self.state.set_new_job(str(request.json))
 
         print(f"TAMS job: {ret}")
@@ -87,19 +91,31 @@ class CCS:
             return "OK", 200
         return "unknown error", 500
 
-    def send_status(self) -> None:
-        ret = requests.post(
-            f"{self.tams_url}/state", json=self.state.get_state_as_json()
-        )
-        if ret == "OK":
-            print("juhu")
+    def job_get(self) -> Any:
+        if self.state.has_job():
+            return self.state.get_job_as_json(), 200
+        else: 
+            return "no job", 404
 
+    def send_status(self) -> None:
+        try:
+            ret = requests.post(
+                f"{self.tams_url}/state", json=self.state.get_state_as_json()
+            )
+            #if ret.text == "OK":
+            #    print("send status successfull")
+        except ConnectionError:
+            return
+        
     def send_alarm(self) -> None:
-        ret = requests.post(
-            f"{self.tams_url}/alarm", json={}
-        )
-        if ret == "OK":
-            print("juhu")
+        try:
+            ret = requests.post(
+                f"{self.tams_url}/alarm", json={}
+            )
+            if ret == "OK":
+                print("juhu")
+        except ConnectionError:
+            return
 
     def send_metric(self) -> None:
         ret = requests.post(

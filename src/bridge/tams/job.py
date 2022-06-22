@@ -67,7 +67,9 @@ class CCSJobState:
         return "has job"
 
     def job_done(self) -> None:
+        print("job done")
         self.__job_status = CCSJobStatus.DONE
+        self.__running_job = None
 
     def get_state_as_json(self) -> str:
         if self.__running_job:
