@@ -5,11 +5,13 @@ from snap7.types import Areas
 
 from bridge.sps.types import (
     SPSClientQueueMSGsMeta,
-    spstypes, spstypevar,
+    spstypes,
+    spstypevar,
 )
 
 DBNumber = int
 Address = int
+
 
 @dataclass
 class SPSDataItem(Generic[spstypevar]):
@@ -17,7 +19,7 @@ class SPSDataItem(Generic[spstypevar]):
     s7Area: Areas
     dbnumber: DBNumber
     start: Address
-    type: type[spstypevar]
+    type: Type[spstypevar]
     value: spstypevar
     bit_index: int = 0
 

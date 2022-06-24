@@ -1,3 +1,5 @@
+from enum import Enum
+
 from strenum import StrEnum
 
 seaport = "seaport"  # pylint: disable=invalid-name
@@ -31,3 +33,11 @@ class CCSJobStatus(StrEnum):
 class CCSFeatureType(StrEnum):
     CIS = "cis"
     FINAL_LANDING = "finallanding"
+
+
+class SpsJobType(Enum):
+    PICK = 0x01
+    DROP = 0x02
+    PARK = 0x04
+    REMOTE = 0x08
+    STORM_PIN = 0x10

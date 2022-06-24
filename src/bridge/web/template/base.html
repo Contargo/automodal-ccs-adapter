@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" type="image/png" href="../assets/img/favicon.png">
+    <title>
+        Automodal Dashboard
+    </title>
+    <!-- CSS Files -->
+    <link id="pagestyle" href="../assets/css/dashboard.css" rel="stylesheet"/>
+    <link id="bootstrap" href="../assets/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+
+<body class="g-sidenav-show bg-dark">
+<div class="container mt-3">
+    <div class="row" style="min-height: 100%; height: 100%;">
+    <main class="main-content position-relative col-12">
+        <!-- End Navbar -->
+        <div class="row ">
+            <div class="col-12" >
+                <div class="card mb-12 text-white bg-secondary">
+                    <div class="card-header">SPS Data</div>
+                    <tr style="height: 100%; 
+                        font-family: 'Lucida Console', 'Courier New', monospace;
+                        background: #2c3034;
+                        font-size: small;
+                        " class="card-body overflow-auto" id="stacks">
+                        <table class="table table-dark">
+                            <thead>
+                                <tr>
+                                    <td>name</td>
+                                    <td>dbnumber</td>
+                                    <td>startindex</td>
+                                    <td>type</td>
+                                    <td>value</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for data in sps_data %}
+                                <tr>
+                                    <td>{{data.0}}</td>
+                                    <td>{{data.1}}</td>
+                                    <td>{{data.2}}</td>
+                                    <td>{{data.3}}</td>
+                                    <td>{{data.4}}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+            </div>
+        </div>
+    </main>
+</div>
+</div>
+<script src="../assets/js/bootstrap.min.js"></script>
+</body>
+
+</html>

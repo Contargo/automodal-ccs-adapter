@@ -1,3 +1,4 @@
+import inspect
 from functools import partial
 from typing import List, Optional, Callable, Type, Any
 
@@ -20,21 +21,37 @@ from snap7.util import (
 
 from snap7.types import Areas
 from bridge.util.types import DBNumber, SPSDataItem, Address
-from .types import spsint, spsdint, spsreal, spsbool, spsbyte, spsword, spstypevar, spstypes
+from .types import (
+    spsint,
+    spsdint,
+    spsreal,
+    spsbool,
+    spsbyte,
+    spsword,
+    spstypevar,
+    spstypes,
+)
 
 
 class SpsClientData:
-
-    data: list[SPSDataItem[spstypes]] = []
-    data_blocker: list[bool] = []
-
     def __init__(self, area: Areas, dbnumber: DBNumber, client: Client) -> None:
+        self.raw_data: bytearray | None = None
+        self.data: list[SPSDataItem[spstypes]] = []
+        self.data_blocker: list[bool] = []
         self.area = area
         self.dbnumber = dbnumber
         self.client = client
+        self.size = 0
+        
+    def _get_type_size(self, data_type: Type[spstypevar]):
+        if data_type in [spsword, spsint]:
+            return  2
+        if data_type in [spsdint, spsreal]:
+            return  4
+        return  1
 
     def define_data(
-        self, start: Address, name: str, data_type: type, bit_index: int = 0
+        self, start: Address, name: str, data_type: Type[spstypevar], bit_index: int = 0
     ) -> None:
         self.data.append(
             SPSDataItem(
@@ -47,11 +64,20 @@ class SpsClientData:
                 bit_index=bit_index,
             )
         )
+        type_size = self._get_type_size(data_type)
+        if self.size < start + type_size:
+            self.size = start + type_size
 
-    def __get_data(self, name: str, data_type: type[spstypevar]) -> spstypevar | None:
+    def __get_data(self, name: str, data_type: Type[spstypevar]) -> spstypevar | None:
         for item in self.data:
-            if item.name == name and item.type == data_type and isinstance(item.value, data_type):
-                return item.value
+            if item.name == name:
+                if item.type == data_type and (isinstance(item.value, data_type) or issubclass(data_type, type(item.value))):
+                    return item.value
+                else:
+                    print(f"__get_data found name but type error: {self.dbnumber}, {name=}, {type(item.value)=}, {item.value}, {data_type=}, {item.type=}, "
+                          f"{item.type == data_type=}, "
+                          f"{isinstance(item.value, data_type)=}, "
+                          f"{issubclass(data_type, type(item.value))=}, ")
         return None
 
     def get_bool(self, name: str) -> bool | None:
@@ -61,7 +87,7 @@ class SpsClientData:
         return self.__get_data(name, spsbyte)
 
     def get_word(self, name: str) -> int | None:
-        return self.__get_data(name, spsword) 
+        return self.__get_data(name, spsword)
 
     def get_int(self, name: str) -> int | None:
         return self.__get_data(name, spsint)
@@ -72,20 +98,15 @@ class SpsClientData:
     def get_real(self, name: str) -> float | None:
         return self.__get_data(name, spsreal)
 
-    def __read_from_sps(
-        self,
-        item: SPSDataItem[spstypevar],
-        number: int,
-        size: int,
-        func: Callable[[bytearray, int], spstypevar],
-    ) -> None:
+    def __read_from_sps(self):
         try:
-            data = self.client.read_area(
-                item.s7Area, dbnumber=item.dbnumber, start=item.start, size=size
+            self.raw_data = self.client.read_area(
+                self.area, dbnumber=self.dbnumber, start=0, size=self.size
             )
-            self.data[number].value = func(data, 0)
         except Snap7Exception as _:
             pass
+        except TypeError as error:
+            print(error)
 
     def __write_bool_to_sps(
         self,
@@ -102,31 +123,38 @@ class SpsClientData:
         )
         try:
             self.client.write_area(
-                area=item.s7Area,
-                dbnumber=item.dbnumber,
+                area=self.area,
+                dbnumber=self.dbnumber,
                 start=item.start,
                 data=data,
             )
         except Snap7Exception as _:
+            print("YOUR STUPID!!!")
             pass
-        
+
     def update_from_sps(self) -> None:
+        self.__read_from_sps()
         for number, item in enumerate(self.data):
             if item.type == spsbool:
-                self.__read_from_sps(item, number, 1, partial(get_bool, bit_index=item.bit_index))
-            #if item.type == spsbyte:
-            #    self.__read_from_sps(item, number, 1, get_byte)
-            #if item.type == spsword:
-            #    self.__read_from_sps(item, number, 2, get_word)
-
+                self.data[number].value = get_bool(
+                    self.raw_data, item.start, bool_index=item.bit_index
+                )
+            if item.type == spsbyte:
+                byte_data = get_byte(self.raw_data, item.start)
+                if type(byte_data) == int:
+                    byte_data = byte_data.to_bytes(1, byteorder="little") # type: ignore
+                self.data[number].value = byte_data
+            if item.type == spsword:
+                byte_data = get_word(self.raw_data, item.start)
+                if type(byte_data) == int:
+                    byte_data = byte_data.to_bytes(2, byteorder="little") # type: ignore
+                self.data[number].value = byte_data
             if item.type == spsint:
-                self.__read_from_sps(item, number, 2, get_int)
+                self.data[number].value = get_int(self.raw_data, item.start)
             if item.type == spsdint:
-                self.__read_from_sps(item, number, 4, get_dint)
-
+                self.data[number].value = get_dint(self.raw_data, item.start)
             if item.type == spsreal:
-                self.__read_from_sps(item, number, 4, get_real)
-            # print(f"read {item.type=} {item.value=}")
+                self.data[number].value = get_real(self.raw_data, item.start)
 
     def has_key(self, key: str) -> bool:
         for data in self.data:
@@ -143,42 +171,47 @@ class SpsClientData:
     def __write_to_sps(
         self,
         item: SPSDataItem[spstypevar],
-        size: int,
         func: Callable[[bytearray, int, spstypevar], Any],
     ) -> None:
-        data = bytearray(size)
+        func(
+            self.raw_data,
+            item.start,
+            item.value,
+        )
+        data = bytearray(self._get_type_size(item.type))
         func(
             data,
             0,
             item.value,
         )
-        self.client.write_area(
-            area=item.s7Area,
-            dbnumber=item.dbnumber,
+        self.client.db_write(
+            db_number=item.dbnumber,
             start=item.start,
             data=data,
         )
-        
+
     def write(self, name: str, value: spstypevar) -> None:
         data = self.get_data_by_name(name)
         if data:
             data.value = value
             if data.type == spsbool:
-                self.__write_bool_to_sps(data, 1)
-            #if data.type == spsbyte:
-            #    self.__write_to_sps(data, 1, set_byte)
-            #if data.type == spsword:
-            #    self.__write_to_sps(data, 2, set_word)
-
+                raise ValueError(
+                    "no boolean write is allowed! Use Byte representation."
+                )
+            if data.type == spsbyte:
+                self.__write_to_sps(data, set_byte)
+            if data.type == spsword:
+                self.__write_to_sps(data, set_word)
             if data.type == spsint:
-                self.__write_to_sps(data, 2, set_int) # type: ignore[arg-type]
+                self.__write_to_sps(data, set_int)  # type: ignore[arg-type]
             if data.type == spsdint:
-                self.__write_to_sps(data, 4, set_dint) # type: ignore[arg-type]
-
+                self.__write_to_sps(data, set_dint)  # type: ignore[arg-type]
             if data.type == spsreal:
-                self.__write_to_sps(data, 4, set_real)
+                self.__write_to_sps(data, set_real)
+            return
+        print("NO DATA")
 
-    def read(self, name: str, data_type: type) -> spstypevar | None:
+    def read(self, name: str, data_type: Type[spstypevar]) -> spstypevar | None:
         if self.has_key(name):
             return self.__get_data(name, data_type)
         return None

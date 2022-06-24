@@ -7,6 +7,7 @@ from bridge.tams.tams import CCS
 from bridge.sand.bridge import SandBridge
 from bridge.sps.client import SpsClient
 from bridge.sps.server import SpsServer
+from bridge.web.web import Web
 
 
 def get_args() -> Any:
@@ -24,6 +25,7 @@ def run() -> None:
     getLogger("snap7").setLevel(CRITICAL)
     sps_server = SpsServer()
     sps_client = SpsClient(ip_address=args.ip)
+    web = Web(sps_client)
     sand_bridge = SandBridge(sps_client)
     ccs = CCS(sps_client)
     try:
@@ -31,11 +33,13 @@ def run() -> None:
             print("Start SERVER")
             sps_server.start()
         sps_client.connect()
+        sps_client.update_data() # just to be sure client_data read from an inialized bytearray
         sps_client.start()
         if args.ccs:
             ccs.start()
         if args.sand:
             sand_bridge.start()
+        web.start()
         while True:
             time.sleep(1)
     except KeyboardInterrupt:

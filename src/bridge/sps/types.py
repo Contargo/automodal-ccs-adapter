@@ -9,17 +9,20 @@ class SPSClientQueueMSGsMeta:
     topic: str
 
 
-# binary
-spsbool = bool  # pylint: disable=invalid-name
-spsbyte = int  # 8bit # pylint: disable=invalid-name
-spsword = int  # 16bit # pylint: disable=invalid-name
+spsbool = bool
 
-# numbers
-spsint = int  # 16bit signed # pylint: disable=invalid-name
-spsdint = int  # 32bit signed # pylint: disable=invalid-name
+class spsbyte(bytes):
+    pass
 
-spsreal = float  # 32bit # pylint: disable=invalid-name
 
+class spsword(bytes):
+    pass
+class spsint(int):
+    pass
+class spsdint(int):
+    pass
+class spsreal(float):
+    pass
 
 spstypes = Union[  # pylint: disable=invalid-name
     spsbool, spsbyte, spsword, spsint, spsdint, spsreal
@@ -28,7 +31,7 @@ spstypes = Union[  # pylint: disable=invalid-name
 spstypevar = TypeVar("spstypevar", bound=spstypes)
 
 
-@dataclass
+@dataclass(frozen=True)
 class DBItem:
     dbnumber: int
     start: int

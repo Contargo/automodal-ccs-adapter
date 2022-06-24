@@ -4,6 +4,7 @@ from datetime import datetime
 
 from dataclasses_json import dataclass_json
 
+from bridge.sps.types import spstypes
 from bridge.tams.enums import CCSJobType, CSSSiteType, CCSFeatureType
 
 
@@ -13,7 +14,6 @@ def guid() -> str:
 
 def timestamp() -> str:
     return datetime.now().isoformat()
-
 
 
 @dataclass_json
@@ -46,9 +46,9 @@ class CCSUnit:
 @dataclass
 class CCSCoordinates:
     # in mm
-    x: int = 1 # pylint: disable=invalid-name
-    y: int = 2 # pylint: disable=invalid-name
-    z: int = 3 # pylint: disable=invalid-name
+    x: int = 1  # pylint: disable=invalid-name
+    y: int = 2  # pylint: disable=invalid-name
+    z: int = 3  # pylint: disable=invalid-name
 
 
 @dataclass_json
@@ -69,10 +69,24 @@ class CCSFeature:
     vendor: str = "GAGA Hühnerhof AG"
     version: str = "v1"
 
+
+@dataclass_json
+@dataclass
+class CCSMetricEntry:
+    name: str
+    datatype: str
+    value: spstypes
+    
+@dataclass_json
+@dataclass
+class CCSMetric:
+    # in mm
+    event: str = field(default_factory=CCSEvent)
+    metrics: list[CCSMetricEntry] = field(default_factory=list)
+
 @dataclass_json
 @dataclass
 class CCSCraneDetails:
     # in mm
     event: str = field(default_factory=CCSEvent)
     feature: list[CCSFeatureType] = field(default_factory=list)
-

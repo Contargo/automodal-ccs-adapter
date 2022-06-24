@@ -47,8 +47,14 @@ class CCSJobState:
     def has_job(self) -> bool:
         return self.__running_job is not None
 
+    def get_job(self) -> CCSJob:
+        return self.__running_job
+
     def sps_status(self) -> str:
         return self.__sps_status
+
+    def set_sps_status(self, status: SPSStatus) -> None:
+        self.__sps_status = status
 
     def get_job_as_json(self) -> str:
         return dataclass_to_json(self.__running_job)
@@ -56,7 +62,7 @@ class CCSJobState:
     def set_new_job(self, job_json: str) -> str:
         try:
             # pylint: disable=no-member
-            job = CCSJob.from_json(job_json) # type: ignore
+            job = CCSJob.from_json(job_json)  # type: ignore
         except ValidationError:
             return "invalid"
         if not self.has_job():
@@ -70,6 +76,7 @@ class CCSJobState:
         print("job done")
         self.__job_status = CCSJobStatus.DONE
         self.__running_job = None
+        self.__sps_status = SPSStatus.WAIT
 
     def get_state_as_json(self) -> str:
         if self.__running_job:

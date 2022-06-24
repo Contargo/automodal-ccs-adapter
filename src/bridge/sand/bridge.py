@@ -6,7 +6,7 @@ from paho.mqtt.client import MQTT_ERR_SUCCESS, Client, MQTTv5
 from paho.mqtt.properties import Properties
 
 from bridge.sps.client import SpsClient
-from bridge.sps.types import spsreal
+from bridge.sps.types import spsreal, spsint, spsdint, spsbyte
 from bridge.util.types import MQTT_Topic, MQTT_Payload
 
 
@@ -31,13 +31,16 @@ class SandBridge:
 
     def on_collision_update(self, _: MQTT_Topic, payload: MQTT_Payload) -> None:
         # todo: payload format. Aktuell nur ein Bool ob danger or not
-        self.sps_client.write_item("collision_status", value=bool(payload))
+        if payload:
+            self.sps_client.write_item("SandStatus", value=spsbyte(b"\x01"))
+        else:
+            self.sps_client.write_item("SandStatus", value=spsbyte(b"\x00"))
 
     def worker(self) -> None:
         while not self.shutdown_event.is_set():
-            katz = self.sps_client.read_value("katz_position", spsreal)
-            crane = self.sps_client.read_value("crane_position", spsreal)
-            spreader = self.sps_client.read_value("spreader_position", spsreal)
+            katz = self.sps_client.read_value("CraneCoordinatesY", spsdint)
+            crane = self.sps_client.read_value("CraneCoordinatesX", spsdint)
+            spreader = self.sps_client.read_value("CraneCoordinatesZ", spsdint)
             self.client.publish(
                 topic="bridge/all/data/position",
                 payload=str(

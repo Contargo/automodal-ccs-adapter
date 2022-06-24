@@ -4,7 +4,7 @@ import json
 from bridge.tams.types import CCSEvent, CCSFeature
 
 
-def dataclass_to_json(datablass_object) -> str: # type: ignore
+def dataclass_to_json(datablass_object) -> str:  # type: ignore
     return datablass_object.to_json()
 
 

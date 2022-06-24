@@ -7,12 +7,14 @@ import requests
 from flask import Flask, request
 from requests import ConnectionError
 
-from bridge.tams.enums import CCSFeatureType
+from bridge.sps.data import db_items
+from bridge.sps.enums import SPSStatus
+from bridge.tams.enums import CCSFeatureType, CCSJobType
 from bridge.tams.helper import generate_metadata, generate_feature, dataclass_to_json
 from bridge.tams.job import CCSJobState
 from bridge.sps.client import SpsClient
-from bridge.sps.types import spsbyte
-from bridge.tams.types import CCSCraneDetails, CCSEvent, CCSFeature
+from bridge.sps.types import spsbyte, spsbool, spsint, spsdint
+from bridge.tams.types import CCSCraneDetails, CCSEvent, CCSFeature, CCSMetric, CCSMetricEntry
 
 
 class CCS:
@@ -42,7 +44,7 @@ class CCS:
             name="CCS Worker",
             daemon=True,
         )
-        
+
         self.worker_ccs: Thread = Thread(
             target=self.ccs,
             args=(),
@@ -64,22 +66,48 @@ class CCS:
         self.app.run(host="127.0.0.1", port=9999)
 
     def sps(self) -> None:
+        state = "wait_for_job"
         while not self.shutdown_event.is_set():
-            status = self.sps_client.read_value("job_status", spsbyte)
-            if status == 0x01:
-                self.state.job_done()
-                # delete old job (and send done status to tams)
+            if state == "wait_for_job":
+                if self.state.sps_status() in [SPSStatus.INIT, SPSStatus.WAIT]:
+                    if self.state.has_job():
+                        print("send new job to SPS")
+                        self.state.set_sps_status(SPSStatus.RUNNING)
+                        job = self.state.get_job()
+                        if job.type == CCSJobType.PICK:
+                            self.sps_client.write_item("JobType", spsbyte(b"\x01"))
+                        if job.type == CCSJobType.DROP:
+                            self.sps_client.write_item("JobType", spsbyte(b"\x02"))
+                        self.sps_client.write_item("JobCoordinatesX", spsdint(job.target.x))
+                        self.sps_client.write_item("JobCoordinatesY", spsdint(job.target.y))
+                        self.sps_client.write_item("JobCoordinatesZ", spsdint(job.target.z))
+                        self.sps_client.write_item("JobSpreaderSize", spsint(20))
+                        self.sps_client.write_item("JobNewJob", spsint(1))
+                        state = "wait_for_sps_in_progress"
+            if state == "wait_for_sps_in_progress":
+                if self.sps_client.read_value("JobStatusInProgress", spsbool):
+                    state = "wait_for_done"
+            if state == "wait_for_done":
+                if (
+                    self.state.sps_status() == SPSStatus.RUNNING
+                    and self.sps_client.read_value("JobStatusDone", spsbool)
+                ):
+                    print(
+                        f"{self.state.sps_status() == SPSStatus.RUNNING} and {self.sps_client.read_value('JobStatusDone', spsbool)}"
+                    )
+                    self.state.job_done()
+                    print("wait for new job from tams")
+                    state = "wait_for_job"
+                    # delete old job (and send done status to tams)
             time.sleep(0.1)
 
     def ccs(self):
         while not self.shutdown_event.is_set():
             self.send_status()
+            self.send_metric()
             time.sleep(1)
-            if random() > 0.95:
-                self.state.job_done()
-        
 
-    def job_post(self, *args, **kwargs) -> Any: # type: ignore
+    def job_post(self, *args, **kwargs) -> Any:  # type: ignore
         ret = self.state.set_new_job(str(request.json))
 
         print(f"TAMS job: {ret}")
@@ -94,7 +122,7 @@ class CCS:
     def job_get(self) -> Any:
         if self.state.has_job():
             return self.state.get_job_as_json(), 200
-        else: 
+        else:
             return "no job", 404
 
     def send_status(self) -> None:
@@ -102,25 +130,28 @@ class CCS:
             ret = requests.post(
                 f"{self.tams_url}/state", json=self.state.get_state_as_json()
             )
-            #if ret.text == "OK":
+            # if ret.text == "OK":
             #    print("send status successfull")
         except ConnectionError:
             return
-        
+
     def send_alarm(self) -> None:
         try:
-            ret = requests.post(
-                f"{self.tams_url}/alarm", json={}
-            )
+            ret = requests.post(f"{self.tams_url}/alarm", json={})
             if ret == "OK":
                 print("juhu")
         except ConnectionError:
             return
 
     def send_metric(self) -> None:
-        ret = requests.post(
-            f"{self.tams_url}/metric", json={}
-        )
+        metrics = CCSMetric()
+        metrics.event = CCSEvent(type=f"net.contargo.logistics.tams.metric")
+        for item in db_items:
+            value = self.sps_client.read_value(item.name, item.type)
+            metrics.metrics.append(
+                CCSMetricEntry(name=item.name, datatype=item.type.__name__, value=value)
+            )
+        ret = requests.post(f"{self.tams_url}/metric", json={})
         if ret == "OK":
             print("juhu")
 
@@ -128,9 +159,11 @@ class CCS:
     def details() -> Any:
         details = CCSCraneDetails()
         details.event = CCSEvent(type=f"net.contargo.logistics.tams.details")
-        details.feature = [CCSFeature(
-            type=CCSFeatureType.FINAL_LANDING,
-        )]
+        details.feature = [
+            CCSFeature(
+                type=CCSFeatureType.FINAL_LANDING,
+            )
+        ]
         return dataclass_to_json(details), 200
 
     def shutdown(self) -> None:

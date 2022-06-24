@@ -9,8 +9,13 @@ authors = [
 license = "MIT"
 readme = "README.md"
 
+
+packages = [
+    { include = "bridge", from = "src" }
+]
+
 [tool.poetry.dependencies]
-python = ">=3.8, <3.9"
+python = "^3.10"
 paho-mqtt = { version = "1.6.1" }
 python-snap7 = "^1.1"
 overrides = "^6.1.0"
@@ -18,6 +23,7 @@ Flask = "^2.1.2"
 dataclasses-json = "^0.5.7"
 types-requests = "^2.27.30"
 StrEnum = "^0.4.7"
+Flask-Cors = "^3.0.10"
 
 
 [tool.poetry.dev-dependencies]
@@ -73,7 +79,7 @@ enable = [
 max-attributes = 10
 
 [tool.mypy]
-python_version = 3.8
+python_version = "3.10"
 
 junit_xml = "xunit-reports/xunit-result-mypy.xml"
 
