@@ -199,8 +199,10 @@ class SpsClientData:
                     "no boolean write is allowed! Use Byte representation."
                 )
             if data.type == spsbyte:
+                data.value = int.from_bytes(data.value, "big")
                 self.__write_to_sps(data, set_byte)
             if data.type == spsword:
+                data.value = int.from_bytes(data.value, "big")
                 self.__write_to_sps(data, set_word)
             if data.type == spsint:
                 self.__write_to_sps(data, set_int)  # type: ignore[arg-type]

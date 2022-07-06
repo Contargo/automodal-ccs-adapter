@@ -108,7 +108,7 @@ class CCS:
             time.sleep(1)
 
     def job_post(self, *args, **kwargs) -> Any:  # type: ignore
-        ret = self.state.set_new_job(str(request.json))
+        ret = self.state.set_new_job(request.data.decode('utf-8'))
 
         print(f"TAMS job: {ret}")
         if ret == "invalid":
@@ -132,7 +132,7 @@ class CCS:
             )
             # if ret.text == "OK":
             #    print("send status successfull")
-        except ConnectionError:
+        except (ConnectionError, ConnectionRefusedError):
             return
 
     def send_alarm(self) -> None:
@@ -144,16 +144,19 @@ class CCS:
             return
 
     def send_metric(self) -> None:
-        metrics = CCSMetric()
-        metrics.event = CCSEvent(type=f"net.contargo.logistics.tams.metric")
-        for item in db_items:
-            value = self.sps_client.read_value(item.name, item.type)
-            metrics.metrics.append(
-                CCSMetricEntry(name=item.name, datatype=item.type.__name__, value=value)
-            )
-        ret = requests.post(f"{self.tams_url}/metric", json={})
-        if ret == "OK":
-            print("juhu")
+        try:
+            metrics = CCSMetric()
+            metrics.event = CCSEvent(type=f"net.contargo.logistics.tams.metric")
+            for item in db_items:
+                value = self.sps_client.read_value(item.name, item.type)
+                metrics.metrics.append(
+                    CCSMetricEntry(name=item.name, datatype=item.type.__name__, value=value)
+                )
+            ret = requests.post(f"{self.tams_url}/metric", json=dataclass_to_json(metrics))
+            if ret == "OK":
+                print("juhu")
+        except ConnectionError:
+            return
 
     @staticmethod
     def details() -> Any:
