@@ -26,13 +26,13 @@ class CCSEvent:
     version: str = "v1"
     producer: str = "ccs.automodal.contargo.net"
     location: str = "DEKOB"
-    guid: str = field(default_factory=guid)
+    eventId: str = field(default_factory=guid)
 
 
 @dataclass_json
 @dataclass
 class CCSUnit:
-    unit_id: str = field(default_factory=guid)
+    unitId: str = field(default_factory=guid)
     height: int = 0
     width: int = 0
     lenght: int = 0
@@ -64,7 +64,7 @@ class CCSJob:
 @dataclass
 class CCSFeature:
     # in mm
-    feature_id: str = field(default_factory=guid)
+    featureId: str = field(default_factory=guid)
     type: str = CCSFeatureType.FINAL_LANDING
     vendor: str = "GAGA Hühnerhof AG"
     version: str = "v1"
@@ -89,4 +89,4 @@ class CCSMetric:
 class CCSCraneDetails:
     # in mm
     event: str = field(default_factory=CCSEvent)
-    feature: list[CCSFeatureType] = field(default_factory=list)
+    features: list[CCSFeatureType] = field(default_factory=list)

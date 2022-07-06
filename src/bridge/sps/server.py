@@ -11,7 +11,7 @@ from snap7.types import (
     srvAreaPE,
     srvAreaDB,
 )
-from snap7.util import set_real, set_int, set_bool, set_dint, get_bool, get_int, set_byte
+from snap7.util import set_real, set_int, set_bool, set_dint, get_bool, get_int, set_byte, get_dint
 
 from bridge.sps.data import db_items, get_item_with_name
 from bridge.sps.types import spsint, spsreal, spsbool, spsdint, spsbyte
@@ -50,7 +50,7 @@ class SpsServer:
             if item.type is spsint:
                 set_int(self.__dbs[item.dbnumber], item.start, randint(0, 999))
             if item.type is spsdint:
-                set_dint(self.__dbs[item.dbnumber], item.start, randint(0, 999))
+                set_dint(self.__dbs[item.dbnumber], item.start, randint(0, 200))
 
             if item.type is spsbool:
                 set_bool(
@@ -85,15 +85,26 @@ class SpsServer:
         # print(f"_get_bool: {value=} {item=}")
         return value
 
-    def _set_int(self, name: str, value: bool):
+    def _set_int(self, name: str, value: int):
         item = get_item_with_name(name)
         # print(f"_set_int: {item=}")
         set_int(self.__dbs[item.dbnumber], item.start, value)
 
-    def _get_int(self, name: str):
+    def _get_int(self, name: str) -> int:
         item = get_item_with_name(name)
         value = get_int(self.__dbs[item.dbnumber], item.start)
         #print(f"_get_int: {value=} {item=}")
+        return value
+
+    def _set_dint(self, name: str, value: int):
+        item = get_item_with_name(name)
+        print(f"_set_dint: {item=}")
+        set_dint(self.__dbs[item.dbnumber], item.start, value)
+
+    def _get_dint(self, name: str) -> int:
+        item = get_item_with_name(name)
+        print(f"_get_int: {item=}")
+        value = get_dint(self.__dbs[item.dbnumber], item.start)
         return value
 
     def set_defaults(self):
@@ -102,14 +113,25 @@ class SpsServer:
         self._set_bool("JobNewJob", False)
 
     def worker(self) -> None:
+        
+        self._set_bool("StatusPowerOn", True)
+        self._set_bool("StatusManuelMode", False)
+        self._set_bool("StatusAutomaticMode", True)
+        self._set_bool("StatusWarning", False)
+        self._set_bool("StatusError", False)
+        
         while not self.shutdown_event.is_set():
             if self._get_int("JobNewJob"):
+                print(f"SERVER: new job")
                 self._set_bool("JobStatusDone", False)
                 self._set_bool("JobStatusInProgress", True)
-                self._set_int("JobNewJob", False)
+                self._set_int("JobNewJob", 0)
                 self.shutdown_event.wait(10)
                 self._set_bool("JobStatusDone", True)
                 self._set_bool("JobStatusInProgress", False)
+                self._set_dint("CraneCoordinatesZ", 1000)
+                self._set_dint("CraneCoordinatesY", 1000)
+                self._set_dint("CraneCoordinatesX", 1000)
             #event = self.server.pick_event()
             #if event:
             #   print(f"SPS_SERVER: {self.server.event_text(event)}")
