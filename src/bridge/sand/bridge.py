@@ -1,3 +1,4 @@
+import pickle
 import time
 from functools import partial
 from threading import Thread, Event
@@ -8,6 +9,8 @@ from paho.mqtt.properties import Properties
 from bridge.sps.client import SpsClient
 from bridge.sps.types import spsreal, spsint, spsdint, spsbyte
 from bridge.util.types import MQTT_Topic, MQTT_Payload
+from paho.mqtt.packettypes import PacketTypes
+from paho.mqtt.properties import Properties
 
 
 class SandBridge:
@@ -19,6 +22,7 @@ class SandBridge:
         self.client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
 
         self.client.message_callback_add("+/+/data/collision", self.on_collision_update)
+        self.client.connect("localhost")
         self.worker_thread: Thread = Thread(
             target=self.worker,
             args=(),
@@ -37,21 +41,35 @@ class SandBridge:
             self.sps_client.write_item("SandStatus", value=spsbyte(b"\x00"))
 
     def worker(self) -> None:
+        publish_properties = Properties(PacketTypes.PUBLISH)
+        # to make sure we can pickle everything and make it easier here, performance here is irrelevant
+        publish_properties.UserProperty = ("datatype", "pickle")
+
+        old_katz = 0
+        old_crane = 0
+        old_spreader = 0
+        histerese = 50  # 5 cm
+
         while not self.shutdown_event.is_set():
             katz = self.sps_client.read_value("CraneCoordinatesY", spsdint)
             crane = self.sps_client.read_value("CraneCoordinatesX", spsdint)
             spreader = self.sps_client.read_value("CraneCoordinatesZ", spsdint)
-            self.client.publish(
-                topic="bridge/all/data/position",
-                payload=str(
-                    {
-                        "katz_position": katz,
-                        "crane_position": crane,
-                        "spreader_position": spreader,
-                    }
-                ),
-            )
-            time.sleep(1)
+            group = "katze"
+
+            # for us we need only changes on the katz value
+            if abs(old_katz - katz) > histerese:
+                self.client.publish(
+                    topic=f"bridge/{group}/data/position",
+                    payload=pickle.dumps(
+                        {
+                            "y_position": katz,
+                            "x_position": crane,
+                            "z_position": spreader,
+                        }
+                    ),
+                    properties=publish_properties
+                )
+            time.sleep(0.5)
 
     def shutdown(self) -> None:
         print("MQTT_CLIENT: shutdown")
@@ -63,8 +81,8 @@ class SandBridge:
 
 
 def get_client_with_reconnect(
-    client_id: str = "",
-    protocol: int = MQTTv5,
+        client_id: str = "",
+        protocol: int = MQTTv5,
 ) -> Client:
     client = Client(client_id=client_id, protocol=protocol)
     client.on_disconnect = partial(_on_disconnect)

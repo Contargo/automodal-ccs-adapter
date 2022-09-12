@@ -85,7 +85,7 @@ class SpsClient:
     def connect(self) -> None:
         try:
             print(f"CLIENT: {self.ip_address=}")
-            self.client.connect(self.ip_address, 0, 2)
+            self.client.connect(self.ip_address, 0, 0)
         except Snap7Exception as exception:
             print(f"SPS_CLIENT: {exception}")
 
