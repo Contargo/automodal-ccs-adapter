@@ -41,7 +41,7 @@ class Web:
         self.app.add_url_rule("/", "frontend", self.frontend, methods=["get"])
 
     def rest(self) -> None:
-        self.app.run(host="127.0.0.1", port=8000)
+        self.app.run(host="0.0.0.0", port=8000)
 
     def frontend(self, *args, **kwargs) -> Any:  # type: ignore
         return render_template("index.html", sps_data=self.sps.get_table())
