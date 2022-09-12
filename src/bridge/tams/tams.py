@@ -63,7 +63,7 @@ class CCS:
         self.app.add_url_rule("/details", "details", self.details, methods=["GET"])
 
     def rest(self) -> None:
-        self.app.run(host="127.0.0.1", port=9999)
+        self.app.run(host="0.0.0.0", port=9999)
 
     def sps(self) -> None:
         state = "wait_for_job"
