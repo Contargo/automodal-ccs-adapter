@@ -1,11 +1,11 @@
 from typing import Optional
 
-from bridge.sps.types import DBItem, spsint, spsreal, spsbool, spsbyte, spsdint
+from bridge.sps.types import DBItem, spsbool, spsbyte, spsdint, spsint, spsreal
 
 db_items = [
-#    DBItem(dbnumber=4, start=8, name="WegLandseite", type=spsdint),
-#    DBItem(dbnumber=4, start=12, name="WegWasserSeite", type=spsdint),
-#    DBItem(dbnumber=4, start=18, name="WegKatze", type=spsdint),
+    #    DBItem(dbnumber=4, start=8, name="WegLandseite", type=spsdint),
+    #    DBItem(dbnumber=4, start=12, name="WegWasserSeite", type=spsdint),
+    #    DBItem(dbnumber=4, start=18, name="WegKatze", type=spsdint),
     DBItem(dbnumber=2500, start=0, name="TriggerwordRecv", type=spsint),
     DBItem(dbnumber=2500, start=2, name="WatchdogRecv", type=spsbool, bit_index=0),
     DBItem(dbnumber=2500, start=4, name="JobCoordinatesZ", type=spsdint),
@@ -71,9 +71,8 @@ db_items = [
 ]
 
 
-def get_item_with_name(name: str) -> DBItem | None:
+def get_item_with_name(name: str) -> DBItem:
     for item in db_items:
         if item.name == name:
             return item
-    print(f"DB_ITEM: item not found {name=}")
-    return None
+    raise ValueError("item name not in db_items")

@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock, patch
 
 from pytest import fixture
+from snap7.client import Client
 from snap7.types import Areas, S7AreaDB
 
 from bridge.sps.client_data import SpsClientData
-from bridge.sps.types import spsreal, spsint, spsbyte, spsdint, spsword, spsbool
-from snap7.client import Client
+from bridge.sps.types import spsbool, spsbyte, spsdint, spsint, spsreal, spsword
 
 
 def client() -> Client:

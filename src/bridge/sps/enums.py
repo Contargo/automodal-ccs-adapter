@@ -1,5 +1,7 @@
 from enum import Enum
+
 from strenum import StrEnum
+
 from bridge.sps.types import SPSClientQueueMSGsMeta
 
 

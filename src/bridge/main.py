@@ -1,13 +1,13 @@
 import time
 from argparse import ArgumentParser
-from logging import getLogger, CRITICAL
+from logging import CRITICAL, getLogger
 from typing import Any
 
 from bridge.logger.logger import Logger
-from bridge.tams.tams import CCS
 from bridge.sand.bridge import SandBridge
 from bridge.sps.client import SpsClient
 from bridge.sps.server import SpsServer
+from bridge.tams.tams import CCS
 from bridge.web.web import Web
 
 
@@ -36,7 +36,7 @@ def run() -> None:
             print("Start SERVER")
             sps_server.start()
         sps_client.connect()
-        sps_client.update_data() # just to be sure client_data read from an inialized bytearray
+        sps_client.update_data()  # just to be sure client_data read from an inialized bytearray
         sps_client.start()
         if args.ccs:
             print("Start CCS")
@@ -55,6 +55,7 @@ def run() -> None:
         sps_server.shutdown()
         ccs.shutdown()
         logger.shutdown()
+
 
 if __name__ == "__main__":
     run()

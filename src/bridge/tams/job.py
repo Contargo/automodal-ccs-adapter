@@ -1,15 +1,16 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import NamedTuple, Type, Any, Optional
+from typing import Any, NamedTuple, Optional, Type
 
 from dataclasses_json import dataclass_json
 from marshmallow import ValidationError
 from snap7.types import Areas
-from bridge.tams.enums import CCSJobType, CCSJobStatus
-from bridge.tams.helper import dataclass_to_json
-from bridge.tams.types import CCSJob, CCSUnit, CCSEvent
+
 from bridge.sps.enums import SPSStatus
-from bridge.util.types import DBNumber, Address
+from bridge.tams.enums import CCSJobStatus, CCSJobType
+from bridge.tams.helper import dataclass_to_json
+from bridge.tams.types import CCSEvent, CCSJob, CCSUnit
+from bridge.util.types import Address, DBNumber
 
 
 def timestamp() -> str:
@@ -47,13 +48,13 @@ class CCSJobState:
     def has_job(self) -> bool:
         return self.__running_job is not None
 
-    def get_job(self) -> CCSJob:
+    def get_job(self) -> CCSJob | None:
         return self.__running_job
 
     def sps_status(self) -> str:
         return self.__sps_status
 
-    def set_sps_status(self, status: SPSStatus) -> None:
+    def set_sps_status(self, status: str) -> None:
         self.__sps_status = status
 
     def get_job_as_json(self) -> str:
@@ -77,12 +78,13 @@ class CCSJobState:
         self.__job_status = CCSJobStatus.DONE
         self.__running_job = None
         self.__sps_status = SPSStatus.WAIT
-        
+
     def cancel_job(self) -> None:
         print("job canceled")
         self.__job_status = CCSJobStatus.CANCELED
         self.__running_job = None
         self.__sps_status = SPSStatus.WAIT
+
     def get_state_as_json(self) -> str:
         if self.__running_job:
             return dataclass_to_json(

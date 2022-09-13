@@ -1,20 +1,30 @@
 import time
 from random import randint, uniform
-from threading import Thread, Event
+from threading import Event, Thread
 
 from snap7.server import Server
 from snap7.types import (
-    wordlen_to_ctypes,
     S7WLByte,
-    srvAreaPA,
-    srvAreaMK,
-    srvAreaPE,
     srvAreaDB,
+    srvAreaMK,
+    srvAreaPA,
+    srvAreaPE,
+    wordlen_to_ctypes,
 )
-from snap7.util import set_real, set_int, set_bool, set_dint, get_bool, get_int, set_byte, get_dint, get_byte
+from snap7.util import (
+    get_bool,
+    get_byte,
+    get_dint,
+    get_int,
+    set_bool,
+    set_byte,
+    set_dint,
+    set_int,
+    set_real,
+)
 
 from bridge.sps.data import db_items, get_item_with_name
-from bridge.sps.types import spsint, spsreal, spsbool, spsdint, spsbyte
+from bridge.sps.types import spsbool, spsbyte, spsdint, spsint, spsreal
 
 
 class SpsServer:
@@ -73,18 +83,18 @@ class SpsServer:
         # print("SPS_SERVER: is running")
         self.server.start()
 
-    def _set_bool(self, name: str, value: bool):
+    def _set_bool(self, name: str, value: bool) -> None:
         item = get_item_with_name(name)
         # print(f"_set_bool: {item=}")
         set_bool(self.__dbs[item.dbnumber], item.start, item.bit_index, value)
 
-    def _get_bool(self, name: str):
+    def _get_bool(self, name: str) -> bool:
         item = get_item_with_name(name)
         value = get_bool(self.__dbs[item.dbnumber], item.start, item.bit_index)
         # print(f"_get_bool: {value=} {item=}")
         return value
 
-    def _set_int(self, name: str, value: int):
+    def _set_int(self, name: str, value: int) -> None:
         item = get_item_with_name(name)
         # print(f"_set_int: {item=}")
         set_int(self.__dbs[item.dbnumber], item.start, value)
@@ -95,7 +105,7 @@ class SpsServer:
         # print(f"_get_int: {value=} {item=}")
         return value
 
-    def _set_byte(self, name: str, value: int):
+    def _set_byte(self, name: str, value: int) -> None:
         item = get_item_with_name(name)
         # print(f"_set_int: {item=}")
         set_byte(self.__dbs[item.dbnumber], item.start, value)
@@ -106,7 +116,7 @@ class SpsServer:
         # print(f"_get_int: {value=} {item=}")
         return value
 
-    def _set_dint(self, name: str, value: int):
+    def _set_dint(self, name: str, value: int) -> None:
         item = get_item_with_name(name)
         print(f"_set_dint: {item=}")
         set_dint(self.__dbs[item.dbnumber], item.start, value)
@@ -117,7 +127,7 @@ class SpsServer:
         value = get_dint(self.__dbs[item.dbnumber], item.start)
         return value
 
-    def set_defaults(self):
+    def set_defaults(self) -> None:
         self._set_bool("JobStatusDone", True)
         self._set_bool("JobStatusInProgress", False)
         self._set_bool("JobNewJob", False)
@@ -133,7 +143,7 @@ class SpsServer:
         self._set_bool("SandFusionStatus", True)
 
         while not self.shutdown_event.is_set():
-            if self._get_bool("JobCancel"): # cancel
+            if self._get_bool("JobCancel"):  # cancel
                 print(f"SERVER: cancel but have no active job")
                 self._set_bool("JobCancel", False)
             if self._get_int("JobNewJob"):
@@ -143,7 +153,7 @@ class SpsServer:
                 self._set_int("JobNewJob", 0)
                 for _ in range(20):
                     self.shutdown_event.wait(0.5)
-                    if self._get_bool("JobCancel"): # cancel
+                    if self._get_bool("JobCancel"):  # cancel
                         self.shutdown_event.wait(2)
                         self._set_bool("JobCancel", False)
                         print(f"SERVER: cancel active job")

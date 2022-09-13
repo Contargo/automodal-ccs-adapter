@@ -1,9 +1,10 @@
 import json
 from os import getcwd
 from pathlib import Path
-from threading import Thread, Event
+from threading import Event, Thread
 from typing import Any
-from flask import Flask, request, render_template
+
+from flask import Flask, render_template, request
 from flask_cors import CORS
 
 from bridge.sps.client import SpsClient

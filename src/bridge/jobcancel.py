@@ -6,14 +6,15 @@ from snap7.util import get_int, set_int
 
 from bridge.sps.data import get_item_with_name
 
-
 client = Client()
 client.connect("10.192.0.150", 0, 0)
+
 
 def get_args() -> Any:
     parser = ArgumentParser(description="yolo")
     parser.add_argument("-c", "--cancel", action="store_true", help="start demo SPS")
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     args = get_args()

@@ -1,20 +1,26 @@
 import time
 from random import random
-from threading import Thread, Event
+from threading import Event, Thread
 from typing import Any
 
 import requests
 from flask import Flask, request
 from requests import ConnectionError
 
+from bridge.sps.client import SpsClient
 from bridge.sps.data import db_items
 from bridge.sps.enums import SPSStatus
+from bridge.sps.types import spsbool, spsbyte, spsdint, spsint
 from bridge.tams.enums import CCSFeatureType, CCSJobType
-from bridge.tams.helper import generate_metadata, generate_feature, dataclass_to_json
+from bridge.tams.helper import dataclass_to_json, generate_feature, generate_metadata
 from bridge.tams.job import CCSJobState
-from bridge.sps.client import SpsClient
-from bridge.sps.types import spsbyte, spsbool, spsint, spsdint
-from bridge.tams.types import CCSCraneDetails, CCSEvent, CCSFeature, CCSMetric, CCSMetricEntry
+from bridge.tams.types import (
+    CCSCraneDetails,
+    CCSEvent,
+    CCSFeature,
+    CCSMetric,
+    CCSMetricEntry,
+)
 
 
 class CCS:
@@ -59,7 +65,9 @@ class CCS:
         self.worker_ccs.start()
 
     def add_endpoints(self) -> None:
-        self.app.add_url_rule("/job_cancel", "job_cancel", self.job_cancel, methods=["POST"])
+        self.app.add_url_rule(
+            "/job_cancel", "job_cancel", self.job_cancel, methods=["POST"]
+        )
         self.app.add_url_rule("/job", "job_post", self.job_post, methods=["POST"])
         self.app.add_url_rule("/job", "job_get", self.job_get, methods=["GET"])
         self.app.add_url_rule("/details", "details", self.details, methods=["GET"])
@@ -68,21 +76,27 @@ class CCS:
         self.app.run(host="0.0.0.0", port=9999)
 
     def sps(self) -> None:
-        
+
         while not self.shutdown_event.is_set():
             if self.worker_state == "wait_for_job":
                 if self.state.sps_status() in [SPSStatus.INIT, SPSStatus.WAIT]:
-                    if self.state.has_job():
+                    job = self.state.get_job()
+                    if job is not None:
                         print("send new job to SPS")
                         self.state.set_sps_status(SPSStatus.RUNNING)
-                        job = self.state.get_job()
                         if job.type == CCSJobType.PICK:
                             self.sps_client.write_item("JobType", spsbyte(b"\x01"))
                         if job.type == CCSJobType.DROP:
                             self.sps_client.write_item("JobType", spsbyte(b"\x02"))
-                        self.sps_client.write_item("JobCoordinatesX", spsdint(job.target.x))
-                        self.sps_client.write_item("JobCoordinatesY", spsdint(job.target.y))
-                        self.sps_client.write_item("JobCoordinatesZ", spsdint(job.target.z))
+                        self.sps_client.write_item(
+                            "JobCoordinatesX", spsdint(job.target.x)
+                        )
+                        self.sps_client.write_item(
+                            "JobCoordinatesY", spsdint(job.target.y)
+                        )
+                        self.sps_client.write_item(
+                            "JobCoordinatesZ", spsdint(job.target.z)
+                        )
                         self.sps_client.write_item("JobSpreaderSize", spsint(20))
                         self.sps_client.write_item("JobNewJob", spsint(1))
                         self.worker_state = "wait_for_sps_in_progress"
@@ -103,7 +117,7 @@ class CCS:
                     # delete old job (and send done status to tams)
             time.sleep(0.1)
 
-    def ccs(self):
+    def ccs(self) -> None:
         while not self.shutdown_event.is_set():
             self.send_status()
             self.send_metric()
@@ -112,11 +126,12 @@ class CCS:
     def job_cancel(self, *args, **kwargs) -> Any:  # type: ignore
         self.state.cancel_job()
         self.worker_state = "wait_for_job"
+        print("DAVID DAVID AAAHHHHH")
         self.sps_client.write_item("JobCommand", spsbyte(b"\x01"))
         return "OK", 200
 
     def job_post(self, *args, **kwargs) -> Any:  # type: ignore
-        ret = self.state.set_new_job(request.data.decode('utf-8'))
+        ret = self.state.set_new_job(request.data.decode("utf-8"))
 
         print(f"TAMS job: {ret}")
         if ret == "invalid":
@@ -158,9 +173,13 @@ class CCS:
             for item in db_items:
                 value = self.sps_client.read_value(item.name, item.type)
                 metrics.metrics.append(
-                    CCSMetricEntry(name=item.name, datatype=item.type.__name__, value=value)
+                    CCSMetricEntry(
+                        name=item.name, datatype=item.type.__name__, value=value
+                    )
                 )
-            ret = requests.post(f"{self.tams_url}/metric", json=dataclass_to_json(metrics))
+            ret = requests.post(
+                f"{self.tams_url}/metric", json=dataclass_to_json(metrics)
+            )
             if ret == "OK":
                 print("juhu")
         except ConnectionError:
@@ -170,7 +189,7 @@ class CCS:
     def details() -> Any:
         details = CCSCraneDetails()
         details.event = CCSEvent(type=f"net.contargo.logistics.tams.details")
-        details.feature = [
+        details.features = [
             CCSFeature(
                 type=CCSFeatureType.FINAL_LANDING,
             )

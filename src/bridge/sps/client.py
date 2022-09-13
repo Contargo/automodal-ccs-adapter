@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
-from threading import Thread, Event, Lock
-from typing import List, Union, Optional, Type
+from threading import Event, Lock, Thread
+from typing import List, Optional, Type, Union, Any
 
 from snap7.client import Client
 from snap7.exceptions import Snap7Exception
@@ -31,10 +31,10 @@ class SpsClient:
             daemon=True,
         )
 
-    def start(self):
+    def start(self) -> None:
         self.worker_thread.start()
 
-    def define_areas(self):
+    def define_areas(self) -> None:
         for item in db_items:
             if item.dbnumber not in self.__db.keys():
                 db = SpsClientData(
@@ -68,14 +68,13 @@ class SpsClient:
                     print(f"write_data to sps: {db_nr=} {name=} {value=}")
                     self.__db[db_nr].write(name, value)
 
-    def read_value(self, name: str, data_type: Type[spstypes]) -> spstypes | None:
+    def read_value(self, name: str, data_type: Type[spstypes]) -> spstypes:
         for db_nr in self.__db:
             if self.__db[db_nr].has_key(name):
                 return self.__db[db_nr].read(name, data_type)
-        print(f"read_value: {name=}, {data_type=}")
-        return None
+        raise ValueError("name not in __db")
 
-    def get_table(self):
+    def get_table(self) -> list[Any]:
         data = []
         for item in db_items:
             value = self.read_value(item.name, item.type)

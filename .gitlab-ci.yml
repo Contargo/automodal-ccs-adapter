@@ -1,0 +1,95 @@
+default:
+  tags:
+    - gpu # we don't really need gpu, but we want to use our server
+
+variables:
+  POETRY_VIRTUALENVS_IN_PROJECT: "true"
+
+stages:
+  - generate
+  - dependencies
+  - lint
+  - test
+
+cache: &dependency_cache
+  key:
+    files:
+      - poetry.lock
+  paths:
+    - .venv
+  policy: pull
+
+generate:
+  image: openapitools/openapi-generator-cli:latest
+  stage: generate
+  script:
+    - ./gen.sh $SPEC $GENERATOR
+  parallel:
+    matrix:
+      - GENERATOR: [html2, dynamic-html]
+        SPEC: [ccs_rest, tams_rest]
+  artifacts:
+    paths:
+      - result
+    expire_in: 1 week
+    name: $SPEC_api
+  needs: []
+
+format:
+  image: pyfound/black
+  stage: lint
+  script:
+    - black --check --diff */
+  needs: []
+
+isort:
+  image: python:3.10-slim
+  stage: lint
+  before_script:
+    - pip install -U isort
+  script:
+    - isort --check-only .
+  needs: []
+
+dependencies:
+  image: duffn/python-poetry:3.10-slim
+  stage: dependencies
+  cache:
+    <<: *dependency_cache
+    policy: pull-push
+  artifacts:
+    expire_in: 1 days
+    paths:
+      - .venv
+  script:
+    - poetry install
+    - poetry check
+  needs: []
+
+mypy:
+  image: duffn/python-poetry:3.10-slim
+  stage: lint
+  cache:
+    key: $CI_JOB_NAME
+    paths:
+      - .mypy_cache
+  script:
+    - poetry run mypy src
+  artifacts:
+    expire_in: 1 days
+    paths:
+      - xunit-reports/*
+  needs:
+    - dependencies
+
+pylint:
+  image: duffn/python-poetry:3.10-slim
+  stage: lint
+  cache:
+    key: $CI_JOB_NAME
+    paths:
+      - .pylint_cache
+  script:
+    - poetry run pylint src/*
+  needs:
+    - dependencies

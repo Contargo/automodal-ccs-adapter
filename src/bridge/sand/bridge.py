@@ -1,16 +1,15 @@
 import pickle
 import time
 from functools import partial
-from threading import Thread, Event
+from threading import Event, Thread
 
 from paho.mqtt.client import MQTT_ERR_SUCCESS, Client, MQTTv5
+from paho.mqtt.packettypes import PacketTypes
 from paho.mqtt.properties import Properties
 
 from bridge.sps.client import SpsClient
-from bridge.sps.types import spsreal, spsint, spsdint, spsbyte
-from bridge.util.types import MQTT_Topic, MQTT_Payload
-from paho.mqtt.packettypes import PacketTypes
-from paho.mqtt.properties import Properties
+from bridge.sps.types import spsbyte, spsdint, spsint, spsreal
+from bridge.util.types import MQTT_Payload, MQTT_Topic
 
 
 class SandBridge:
@@ -51,13 +50,13 @@ class SandBridge:
         histerese = 50  # 5 cm
 
         while not self.shutdown_event.is_set():
-            katz = self.sps_client.read_value("CraneCoordinatesY", spsdint)
-            crane = self.sps_client.read_value("CraneCoordinatesX", spsdint)
-            spreader = self.sps_client.read_value("CraneCoordinatesZ", spsdint)
+            katz = self.sps_client.read_value("CraneCoordinatesY", spsdint) 
+            crane = self.sps_client.read_value("CraneCoordinatesX", spsdint) 
+            spreader = self.sps_client.read_value("CraneCoordinatesZ", spsdint) 
             group = "katze"
 
             # for us we need only changes on the katz value
-            if abs(old_katz - katz) > histerese:
+            if abs(old_katz - katz) > histerese: # type: ignore
                 self.client.publish(
                     topic=f"bridge/{group}/data/position",
                     payload=pickle.dumps(
@@ -67,7 +66,7 @@ class SandBridge:
                             "z_position": spreader,
                         }
                     ),
-                    properties=publish_properties
+                    properties=publish_properties,
                 )
             time.sleep(0.5)
 
@@ -81,8 +80,8 @@ class SandBridge:
 
 
 def get_client_with_reconnect(
-        client_id: str = "",
-        protocol: int = MQTTv5,
+    client_id: str = "",
+    protocol: int = MQTTv5,
 ) -> Client:
     client = Client(client_id=client_id, protocol=protocol)
     client.on_disconnect = partial(_on_disconnect)
