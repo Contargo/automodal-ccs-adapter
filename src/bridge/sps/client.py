@@ -85,7 +85,11 @@ class SpsClient:
     def connect(self) -> None:
         try:
             print(f"CLIENT: {self.ip_address=}")
-            self.client.connect(self.ip_address, 0, 0)
+            if self.ip_address == "127.0.0.1":
+                print("is localhost")
+                self.client.connect(self.ip_address, 0, 1)
+            else:
+                self.client.connect(self.ip_address, 0, 0)
         except Snap7Exception as exception:
             print(f"SPS_CLIENT: {exception}")
 

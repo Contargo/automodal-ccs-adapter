@@ -26,6 +26,7 @@ class CCS:
         self.sps_client = sps_client
         self.tams_url = tams_url
         self.shutdown_event = Event()
+        self.worker_state = "wait_for_job"
         self.app = Flask(
             "ccs",
         )
@@ -58,6 +59,7 @@ class CCS:
         self.worker_ccs.start()
 
     def add_endpoints(self) -> None:
+        self.app.add_url_rule("/job_cancel", "job_cancel", self.job_cancel, methods=["POST"])
         self.app.add_url_rule("/job", "job_post", self.job_post, methods=["POST"])
         self.app.add_url_rule("/job", "job_get", self.job_get, methods=["GET"])
         self.app.add_url_rule("/details", "details", self.details, methods=["GET"])
@@ -66,9 +68,9 @@ class CCS:
         self.app.run(host="0.0.0.0", port=9999)
 
     def sps(self) -> None:
-        state = "wait_for_job"
+        
         while not self.shutdown_event.is_set():
-            if state == "wait_for_job":
+            if self.worker_state == "wait_for_job":
                 if self.state.sps_status() in [SPSStatus.INIT, SPSStatus.WAIT]:
                     if self.state.has_job():
                         print("send new job to SPS")
@@ -83,11 +85,11 @@ class CCS:
                         self.sps_client.write_item("JobCoordinatesZ", spsdint(job.target.z))
                         self.sps_client.write_item("JobSpreaderSize", spsint(20))
                         self.sps_client.write_item("JobNewJob", spsint(1))
-                        state = "wait_for_sps_in_progress"
-            if state == "wait_for_sps_in_progress":
+                        self.worker_state = "wait_for_sps_in_progress"
+            if self.worker_state == "wait_for_sps_in_progress":
                 if self.sps_client.read_value("JobStatusInProgress", spsbool):
-                    state = "wait_for_done"
-            if state == "wait_for_done":
+                    self.worker_state = "wait_for_done"
+            if self.worker_state == "wait_for_done":
                 if (
                     self.state.sps_status() == SPSStatus.RUNNING
                     and self.sps_client.read_value("JobStatusDone", spsbool)
@@ -97,7 +99,7 @@ class CCS:
                     )
                     self.state.job_done()
                     print("wait for new job from tams")
-                    state = "wait_for_job"
+                    self.worker_state = "wait_for_job"
                     # delete old job (and send done status to tams)
             time.sleep(0.1)
 
@@ -106,6 +108,12 @@ class CCS:
             self.send_status()
             self.send_metric()
             time.sleep(1)
+
+    def job_cancel(self, *args, **kwargs) -> Any:  # type: ignore
+        self.state.cancel_job()
+        self.worker_state = "wait_for_job"
+        self.sps_client.write_item("JobCommand", spsbyte(b"\x01"))
+        return "OK", 200
 
     def job_post(self, *args, **kwargs) -> Any:  # type: ignore
         ret = self.state.set_new_job(request.data.decode('utf-8'))

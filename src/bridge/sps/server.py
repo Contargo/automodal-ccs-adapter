@@ -11,14 +11,13 @@ from snap7.types import (
     srvAreaPE,
     srvAreaDB,
 )
-from snap7.util import set_real, set_int, set_bool, set_dint, get_bool, get_int, set_byte, get_dint
+from snap7.util import set_real, set_int, set_bool, set_dint, get_bool, get_int, set_byte, get_dint, get_byte
 
 from bridge.sps.data import db_items, get_item_with_name
 from bridge.sps.types import spsint, spsreal, spsbool, spsdint, spsbyte
 
 
 class SpsServer:
-
     __dbs: dict[int, bytearray] = {}
 
     def __init__(self) -> None:
@@ -90,10 +89,16 @@ class SpsServer:
         # print(f"_set_int: {item=}")
         set_int(self.__dbs[item.dbnumber], item.start, value)
 
+    def _get_byte(self, name: str) -> bytes:
+        item = get_item_with_name(name)
+        value = get_byte(self.__dbs[item.dbnumber], item.start)
+        # print(f"_get_int: {value=} {item=}")
+        return value
+
     def _get_int(self, name: str) -> int:
         item = get_item_with_name(name)
         value = get_int(self.__dbs[item.dbnumber], item.start)
-        #print(f"_get_int: {value=} {item=}")
+        # print(f"_get_int: {value=} {item=}")
         return value
 
     def _set_dint(self, name: str, value: int):
@@ -113,27 +118,31 @@ class SpsServer:
         self._set_bool("JobNewJob", False)
 
     def worker(self) -> None:
-        
+
         self._set_bool("StatusPowerOn", True)
         self._set_bool("StatusManuelMode", False)
         self._set_bool("StatusAutomaticMode", True)
         self._set_bool("StatusWarning", False)
         self._set_bool("StatusError", False)
-        
+        self._set_bool("SandFusionStatus", True)
+
         while not self.shutdown_event.is_set():
             if self._get_int("JobNewJob"):
                 print(f"SERVER: new job")
                 self._set_bool("JobStatusDone", False)
                 self._set_bool("JobStatusInProgress", True)
                 self._set_int("JobNewJob", 0)
-                self.shutdown_event.wait(10)
+                for _ in range(20):
+                    self.shutdown_event.wait(0.5)
+                    if self._get_byte("JobCommand") == "0x01": # cancel
+                        break
                 self._set_bool("JobStatusDone", True)
                 self._set_bool("JobStatusInProgress", False)
                 self._set_dint("CraneCoordinatesZ", 1000)
                 self._set_dint("CraneCoordinatesY", 1000)
                 self._set_dint("CraneCoordinatesX", 1000)
-            #event = self.server.pick_event()
-            #if event:
+            # event = self.server.pick_event()
+            # if event:
             #   print(f"SPS_SERVER: {self.server.event_text(event)}")
             time.sleep(0.1)
 

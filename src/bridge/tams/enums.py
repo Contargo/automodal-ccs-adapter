@@ -28,6 +28,7 @@ class CCSJobStatus(StrEnum):
     REJECTED = "rejected"
     PAUSED = "paused"
     DONE = "done"
+    CANCELED = "cancel"
 
 
 class CCSFeatureType(StrEnum):

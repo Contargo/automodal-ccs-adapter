@@ -77,7 +77,12 @@ class CCSJobState:
         self.__job_status = CCSJobStatus.DONE
         self.__running_job = None
         self.__sps_status = SPSStatus.WAIT
-
+        
+    def cancel_job(self) -> None:
+        print("job canceled")
+        self.__job_status = CCSJobStatus.CANCELED
+        self.__running_job = None
+        self.__sps_status = SPSStatus.WAIT
     def get_state_as_json(self) -> str:
         if self.__running_job:
             return dataclass_to_json(
