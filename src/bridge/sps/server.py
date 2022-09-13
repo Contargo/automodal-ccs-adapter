@@ -95,6 +95,11 @@ class SpsServer:
         # print(f"_get_int: {value=} {item=}")
         return value
 
+    def _set_byte(self, name: str, value: int):
+        item = get_item_with_name(name)
+        # print(f"_set_int: {item=}")
+        set_byte(self.__dbs[item.dbnumber], item.start, value)
+
     def _get_int(self, name: str) -> int:
         item = get_item_with_name(name)
         value = get_int(self.__dbs[item.dbnumber], item.start)
@@ -124,9 +129,13 @@ class SpsServer:
         self._set_bool("StatusAutomaticMode", True)
         self._set_bool("StatusWarning", False)
         self._set_bool("StatusError", False)
+        self._set_byte("JobCommand", 0x00)
         self._set_bool("SandFusionStatus", True)
 
         while not self.shutdown_event.is_set():
+            if self._get_bool("JobCancel"): # cancel
+                print(f"SERVER: cancel but have no active job")
+                self._set_bool("JobCancel", False)
             if self._get_int("JobNewJob"):
                 print(f"SERVER: new job")
                 self._set_bool("JobStatusDone", False)
@@ -134,7 +143,10 @@ class SpsServer:
                 self._set_int("JobNewJob", 0)
                 for _ in range(20):
                     self.shutdown_event.wait(0.5)
-                    if self._get_byte("JobCommand") == "0x01": # cancel
+                    if self._get_bool("JobCancel"): # cancel
+                        self.shutdown_event.wait(2)
+                        self._set_bool("JobCancel", False)
+                        print(f"SERVER: cancel active job")
                         break
                 self._set_bool("JobStatusDone", True)
                 self._set_bool("JobStatusInProgress", False)
