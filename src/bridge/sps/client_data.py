@@ -113,6 +113,8 @@ class SpsClientData:
             pass
         except TypeError as error:
             print(error)
+        except RuntimeError as _:
+            print("SPS CLIENT DATA __read_from_sps: RuntimeError")
 
     def __write_bool_to_sps(
         self,

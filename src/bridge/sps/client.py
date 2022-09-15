@@ -91,6 +91,8 @@ class SpsClient:
                 self.client.connect(self.ip_address, 0, 0)
         except Snap7Exception as exception:
             print(f"SPS_CLIENT: {exception}")
+        except RuntimeError as _:
+            print("SPS CLIENT connect: RuntimeError")
 
     def worker(self) -> None:
         while not self.shutdown_event.is_set():
@@ -103,7 +105,7 @@ class SpsClient:
                 self.connect()
                 time.sleep(1)
             except RuntimeError as _:
-                print("Runtimeerror")
+                print("SPS CLIENT worker: RuntimeError")
                 self.connect()
                 time.sleep(1)
 
