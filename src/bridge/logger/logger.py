@@ -4,7 +4,7 @@ from threading import Event, Thread
 
 from bridge.sps.client import SpsClient
 from bridge.sps.data import db_items
-
+from datetime import datetime
 
 class Logger:
     def __init__(self, sps_client: SpsClient):
@@ -24,7 +24,7 @@ class Logger:
     def worker(self) -> None:
 
         csv_head = "timestamp," + ",".join([dx.name for dx in db_items])
-        file_path = Path("log.csv")
+        file_path = Path(f"{datetime.now()}.csv")
         file_path.write_text("")
 
         csv_file = file_path.open("a")
