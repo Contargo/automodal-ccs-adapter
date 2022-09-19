@@ -40,12 +40,16 @@ class Web:
 
     def add_endpoints(self) -> None:
         self.app.add_url_rule("/", "frontend", self.frontend, methods=["get"])
+        self.app.add_url_rule("/body", "body", self.body_content, methods=["get"])
 
     def rest(self) -> None:
         self.app.run(host="0.0.0.0", port=8000)
 
     def frontend(self, *args, **kwargs) -> Any:  # type: ignore
-        return render_template("index.html", sps_data=self.sps.get_table())
+        return render_template("empty_body.html")
+
+    def body_content(self, *args, **kwargs) -> Any:  # type: ignore
+        return render_template("body.html", sps_data=self.sps.get_table())
 
     def shutdown(self) -> None:
         self.shutdown_event.set()

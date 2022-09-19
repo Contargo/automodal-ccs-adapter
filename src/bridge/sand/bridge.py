@@ -11,33 +11,54 @@ from bridge.sps.client import SpsClient
 from bridge.sps.types import spsbyte, spsdint, spsint, spsreal
 from bridge.util.types import MQTT_Payload, MQTT_Topic
 
-
 class SandBridge:
     def __init__(self, sps_client: SpsClient) -> None:
 
         self.sps_client = sps_client
         self.shutdown_event = Event()
+        self.status = True
+        self.old_Status = False
 
         self.client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
-
-        self.client.message_callback_add("+/+/data/collision", self.on_collision_update)
         self.client.connect("localhost")
+        self.client.on_message = self.on_collision_update
+        self.client.subscribe("+/+/data/collision")
+        self.client.loop_start()
         self.worker_thread: Thread = Thread(
             target=self.worker,
             args=(),
             name="sps worker",
             daemon=True,
         )
+        self.worker_status_thread: Thread = Thread(
+            target=self.worker_status,
+            args=(),
+            name="sps worker status",
+            daemon=True,
+        )
 
     def start(self) -> None:
         self.worker_thread.start()
+        self.worker_status_thread.start()
 
-    def on_collision_update(self, _: MQTT_Topic, payload: MQTT_Payload) -> None:
+
+    def on_collision_update(self, _client, _: MQTT_Topic, payload: MQTT_Payload) -> None:
         # todo: payload format. Aktuell nur ein Bool ob danger or not
         if payload:
-            self.sps_client.write_item("SandStatus", value=spsbyte(b"\x01"))
+            self.status = True
         else:
-            self.sps_client.write_item("SandStatus", value=spsbyte(b"\x00"))
+            self.status = False
+
+    def worker_status(self) -> None:
+        time.sleep(1)
+        while not self.shutdown_event.is_set():
+            if self.status != self.old_Status:
+                if self.status:
+                    self.sps_client.write_item("SandStatus", spsbyte(b"\x01"))
+                else:
+                    self.sps_client.write_item("SandStatus", spsbyte(b"\x00"))
+                self.old_Status = self.status
+            time.sleep(0.3)
 
     def worker(self) -> None:
         publish_properties = Properties(PacketTypes.PUBLISH)
