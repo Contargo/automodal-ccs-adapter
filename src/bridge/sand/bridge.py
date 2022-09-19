@@ -3,7 +3,7 @@ import time
 from functools import partial
 from threading import Event, Thread
 
-from paho.mqtt.client import MQTT_ERR_SUCCESS, Client, MQTTv5
+from paho.mqtt.client import MQTT_ERR_SUCCESS, Client, MQTTv5, MQTTMessage
 from paho.mqtt.packettypes import PacketTypes
 from paho.mqtt.properties import Properties
 
@@ -42,11 +42,11 @@ class SandBridge:
         self.worker_status_thread.start()
 
 
-    def on_collision_update(self, _client, _: MQTT_Topic, msg: MQTT_Payload) -> None:
+    def on_collision_update(self, _client, _: MQTT_Topic, msg: MQTTMessage) -> None:
         # todo: payload format. Aktuell nur ein Bool ob danger or not
         try:
             print(pickle.loads(msg.payload))
-            if pickle.load(msg.payload):
+            if pickle.loads(msg.payload):
                 self.status = True
             else:
                 self.status = False
