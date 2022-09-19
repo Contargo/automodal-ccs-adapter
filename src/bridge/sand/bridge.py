@@ -50,7 +50,8 @@ class SandBridge:
                 self.status = True
             else:
                 self.status = False
-         except pickle.UnpicklingError:
+        except pickle.UnpicklingError:
+            print("pickle error")
 
     def worker_status(self) -> None:
         time.sleep(1)
