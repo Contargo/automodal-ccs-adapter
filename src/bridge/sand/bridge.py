@@ -42,22 +42,25 @@ class SandBridge:
         self.worker_status_thread.start()
 
 
-    def on_collision_update(self, _client, _: MQTT_Topic, payload: MQTT_Payload) -> None:
+    def on_collision_update(self, _client, _: MQTT_Topic, msg: MQTT_Payload) -> None:
         # todo: payload format. Aktuell nur ein Bool ob danger or not
-        if payload:
-            self.status = True
-        else:
-            self.status = False
+        try:
+            print(pickle.loads(msg.payload))
+            if pickle.load(msg.payload):
+                self.status = True
+            else:
+                self.status = False
+         except pickle.UnpicklingError:
 
     def worker_status(self) -> None:
         time.sleep(1)
         while not self.shutdown_event.is_set():
             if self.status != self.old_Status:
+                self.old_Status = self.status
                 if self.status:
                     self.sps_client.write_item("SandStatus", spsbyte(b"\x01"))
                 else:
                     self.sps_client.write_item("SandStatus", spsbyte(b"\x00"))
-                self.old_Status = self.status
             time.sleep(0.3)
 
     def worker(self) -> None:
