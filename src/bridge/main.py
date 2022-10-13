@@ -17,32 +17,39 @@ def get_args() -> Any:
     parser.add_argument("--ccs", action="store_true", help="start ccs")
     parser.add_argument("--sand", action="store_true", help="start sand bridge")
     parser.add_argument("-i", "--ip", type=str, default="127.0.0.1", help="IP of SPS")
-    parser.add_argument("-l", "--log", action="store_true", help="log to csv")
+    parser.add_argument("-l", "--log", action="store_true", help="log metrics to csv")
+    parser.add_argument("-v", "--verbose", action="store_true", help="verbose console logging")
+    parser.add_argument("--logwebcalls", action="store_true", help="log web calls")
     return parser.parse_args()
 
 
 def run() -> None:
     args = get_args()
-    print(f"{args=}")
+    print(f"[MAIN] {args=}")
     getLogger("snap7").setLevel(CRITICAL)
     sps_server = SpsServer()
     sps_client = SpsClient(ip_address=args.ip)
-    web = Web(sps_client)
-    sand_bridge = SandBridge(sps_client)
-    ccs = CCS(sps_client)
+    web = Web(sps_client, args.verbose)
+    sand_bridge = SandBridge(sps_client, args.verbose)
+    ccs = CCS(sps_client, verbose=args.verbose)
     logger = Logger(sps_client)
+    if not args.logwebcalls:
+        print("[MAIN] disable werkzeug logging")
+        import logging
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.ERROR)
     try:
         if args.server:
-            print("Start SERVER")
+            print("[MAIN] Start SERVER")
             sps_server.start()
         sps_client.connect()
         sps_client.update_data()  # just to be sure client_data read from an inialized bytearray
         sps_client.start()
         if args.ccs:
-            print("Start CCS")
+            print("[MAIN] Start CCS")
             ccs.start()
         if args.sand:
-            print("Start SAND BRIDGE")
+            print("[MAIN] Start SAND BRIDGE")
             sand_bridge.start()
         web.start()
         if args.log:

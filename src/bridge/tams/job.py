@@ -74,13 +74,13 @@ class CCSJobState:
         return "has job"
 
     def job_done(self) -> None:
-        print("job done")
+        print("[JOB][job_done] called")
         self.__job_status = CCSJobStatus.DONE
         self.__running_job = None
         self.__sps_status = SPSStatus.WAIT
 
     def cancel_job(self) -> None:
-        print("job canceled")
+        print("[JOB][cancel_job] called")
         self.__job_status = CCSJobStatus.CANCELED
         self.__running_job = None
         self.__sps_status = SPSStatus.WAIT

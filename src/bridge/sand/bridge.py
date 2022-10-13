@@ -12,12 +12,13 @@ from bridge.sps.types import spsbyte, spsdint, spsint, spsreal
 from bridge.util.types import MQTT_Payload, MQTT_Topic
 
 class SandBridge:
-    def __init__(self, sps_client: SpsClient) -> None:
+    def __init__(self, sps_client: SpsClient, verbose: bool = False) -> None:
 
         self.sps_client = sps_client
         self.shutdown_event = Event()
         self.status = True
         self.old_Status = False
+        self.verbose = verbose
 
         self.client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
         self.client.connect("localhost")
@@ -45,13 +46,14 @@ class SandBridge:
     def on_collision_update(self, _client, _: MQTT_Topic, msg: MQTTMessage) -> None:
         # todo: payload format. Aktuell nur ein Bool ob danger or not
         try:
-            print(pickle.loads(msg.payload))
+            if self.verbose:
+                print(f"[BRIDGE][on_collision_update] {pickle.loads(msg.payload)}")
             if pickle.loads(msg.payload):
                 self.status = True
             else:
                 self.status = False
         except pickle.UnpicklingError:
-            print("pickle error")
+            print("[BRIDGE][on_collision_update] pickle error")
 
     def worker_status(self) -> None:
         time.sleep(1)
@@ -96,7 +98,7 @@ class SandBridge:
             time.sleep(0.5)
 
     def shutdown(self) -> None:
-        print("MQTT_CLIENT: shutdown")
+        print("[BRIDGE][shutdown] shutdown")
         self.shutdown_event.set()
         self.worker_thread.join()
         if self.client is not None:
@@ -115,12 +117,14 @@ def get_client_with_reconnect(
 
 def _on_disconnect(client: Client, __: None, reason_code: int, ___: Properties) -> None:
     print(  # allowed
+        f"[BRIDGE][_on_disconnect] "
         f"reason_code: {reason_code} | "  # pylint: disable=protected-access
         f"MQTT_ERR_SUCCESS: {MQTT_ERR_SUCCESS} | "
         f"client_id: {client._client_id}"
     )
     if reason_code != MQTT_ERR_SUCCESS:
         print(
+            f"[BRIDGE][_on_disconnect] "
             f"communicator client: '{client._client_id}' "  # pylint: disable=protected-access
             "got disconnected, retrying...",
             "__on_disconnect",

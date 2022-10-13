@@ -28,7 +28,8 @@ class CCS:
     type: str = "crane"
     name: str = "PSKran"
 
-    def __init__(self, sps_client: SpsClient, tams_url: str = "http://localhost:9998"):
+    def __init__(self, sps_client: SpsClient, tams_url: str = "http://localhost:9998", verbose: bool = False):
+        self.verbose = verbose
         self.sps_client = sps_client
         self.tams_url = tams_url
         self.shutdown_event = Event()
@@ -82,7 +83,7 @@ class CCS:
                 if self.state.sps_status() in [SPSStatus.INIT, SPSStatus.WAIT]:
                     job = self.state.get_job()
                     if job is not None:
-                        print("send new job to SPS")
+                        print("[TAMS][sps] send new job to SPS")
                         self.state.set_sps_status(SPSStatus.RUNNING)
                         if job.type == CCSJobType.PICK:
                             self.sps_client.write_item("JobType", spsbyte(b"\x01"))
@@ -108,11 +109,12 @@ class CCS:
                     self.state.sps_status() == SPSStatus.RUNNING
                     and self.sps_client.read_value("JobStatusDone", spsbool)
                 ):
-                    print(
-                        f"{self.state.sps_status() == SPSStatus.RUNNING} and {self.sps_client.read_value('JobStatusDone', spsbool)}"
-                    )
+                    if self.verbose:
+                        print(
+                            f"[TAMS][sps] {self.state.sps_status() == SPSStatus.RUNNING} and {self.sps_client.read_value('JobStatusDone', spsbool)}"
+                        )
                     self.state.job_done()
-                    print("wait for new job from tams")
+                    print("[TAMS][sps] wait for new job from tams")
                     self.worker_state = "wait_for_job"
                     # delete old job (and send done status to tams)
             time.sleep(0.1)
@@ -126,14 +128,14 @@ class CCS:
     def job_cancel(self, *args, **kwargs) -> Any:  # type: ignore
         self.state.cancel_job()
         self.worker_state = "wait_for_job"
-        print("DAVID DAVID AAAHHHHH")
+        print("[TAMS][job_cancel] called")
         self.sps_client.write_item("JobCommand", spsbyte(b"\x01"))
         return "OK", 200
 
     def job_post(self, *args, **kwargs) -> Any:  # type: ignore
         ret = self.state.set_new_job(request.data.decode("utf-8"))
 
-        print(f"TAMS job: {ret}")
+        print(f"[TAMS][job_post] {ret}")
         if ret == "invalid":
             return "Invalid input", 405
         if ret == "has job":
@@ -151,7 +153,7 @@ class CCS:
     def send_status(self) -> None:
         try:
             ret = requests.post(
-                f"{self.tams_url}/state", json=self.state.get_state_as_json()
+                f"{self.tams_url}/state", data=self.state.get_state_as_json()
             )
             # if ret.text == "OK":
             #    print("send status successfull")
@@ -162,7 +164,7 @@ class CCS:
         try:
             ret = requests.post(f"{self.tams_url}/alarm", json={})
             if ret == "OK":
-                print("juhu")
+                print("[TAMS][send_alarm] ok")
         except ConnectionError:
             return
 
@@ -181,7 +183,8 @@ class CCS:
                 f"{self.tams_url}/metric", json=dataclass_to_json(metrics)
             )
             if ret == "OK":
-                print("juhu")
+                if self.verbose:
+                    print("[TAMS][send_metric] ok")
         except ConnectionError:
             return
 

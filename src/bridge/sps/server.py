@@ -30,7 +30,8 @@ from bridge.sps.types import spsbool, spsbyte, spsdint, spsint, spsreal
 class SpsServer:
     __dbs: dict[int, bytearray] = {}
 
-    def __init__(self) -> None:
+    def __init__(self, verbose: bool = False) -> None:
+        self.verbose = verbose
         self.shutdown_event = Event()
         self.server = Server()
         self.globaldata = (wordlen_to_ctypes[S7WLByte] * 10)()
@@ -49,7 +50,8 @@ class SpsServer:
 
     def generate_data(self) -> None:
         for item in db_items:
-            print(f"SERVER: {item=}")
+            if self.verbose:
+                print(f"[SPS_SERVER][generate_data]: {item=}")
             if item.type is spsreal:
                 set_real(
                     self.__dbs[item.dbnumber], item.start, round(uniform(0, 99), 2)
@@ -118,12 +120,12 @@ class SpsServer:
 
     def _set_dint(self, name: str, value: int) -> None:
         item = get_item_with_name(name)
-        print(f"_set_dint: {item=}")
+        print(f"[SPS_SERVER][_set_dint] {item=}")
         set_dint(self.__dbs[item.dbnumber], item.start, value)
 
     def _get_dint(self, name: str) -> int:
         item = get_item_with_name(name)
-        print(f"_get_int: {item=}")
+        print(f"[SPS_SERVER][_get_dint] {item=}")
         value = get_dint(self.__dbs[item.dbnumber], item.start)
         return value
 
@@ -144,10 +146,10 @@ class SpsServer:
 
         while not self.shutdown_event.is_set():
             if self._get_bool("JobCancel"):  # cancel
-                print(f"SERVER: cancel but have no active job")
+                print(f"[SPS_SERVER][worker] cancel but have no active job")
                 self._set_bool("JobCancel", False)
             if self._get_int("JobNewJob"):
-                print(f"SERVER: new job")
+                print(f"[SPS_SERVER][worker] new job")
                 self._set_bool("JobStatusDone", False)
                 self._set_bool("JobStatusInProgress", True)
                 self._set_int("JobNewJob", 0)
@@ -156,7 +158,7 @@ class SpsServer:
                     if self._get_bool("JobCancel"):  # cancel
                         self.shutdown_event.wait(2)
                         self._set_bool("JobCancel", False)
-                        print(f"SERVER: cancel active job")
+                        print(f"[SPS_SERVER][worker] cancel active job")
                         break
                 self._set_bool("JobStatusDone", True)
                 self._set_bool("JobStatusInProgress", False)
@@ -169,7 +171,7 @@ class SpsServer:
             time.sleep(0.1)
 
     def shutdown(self) -> None:
-        print("SPS_SERVER: shutdown")
+        print("[SPS_SERVER][shutdown] shutdown")
         self.shutdown_event.set()
         self.worker_thread.join()
         self.server.stop()

@@ -15,8 +15,9 @@ class Web:
     type: str = "crane"
     name: str = "PSKran"
 
-    def __init__(self, sps_client: SpsClient):
+    def __init__(self, sps_client: SpsClient, verbose: bool = False):
         self.sps = sps_client
+        self.verbose = verbose
         template_folder = Path(__file__).parent.joinpath("template")
         static_folder = Path(__file__).parent.joinpath("assets")
         self.shutdown_event = Event()

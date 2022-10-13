@@ -35,7 +35,8 @@ from .types import (
 
 
 class SpsClientData:
-    def __init__(self, area: Areas, dbnumber: DBNumber, client: Client) -> None:
+    def __init__(self, area: Areas, dbnumber: DBNumber, client: Client, verbose: bool = False) -> None:
+        self.verbose = verbose
         self.raw_data: bytearray = bytearray()
         self.data: list[SPSDataItem[spstypes]] = []
         self.data_blocker: list[bool] = []
@@ -79,7 +80,8 @@ class SpsClientData:
                     return item.value
                 else:
                     print(
-                        f"__get_data found name but type error: {self.dbnumber}, {name=}, {type(item.value)=}, {item.value}, {data_type=}, {item.type=}, "
+                        f"[SPS_CLIENT_DATA][__get_data] "
+                        f"found name but type error: {self.dbnumber}, {name=}, {type(item.value)=}, {item.value}, {data_type=}, {item.type=}, "
                         f"{item.type == data_type=}, "
                         f"{isinstance(item.value, data_type)=}, "
                         f"{issubclass(data_type, type(item.value))=}, "
@@ -114,7 +116,7 @@ class SpsClientData:
         except TypeError as error:
             print(error)
         except RuntimeError as _:
-            print("SPS CLIENT DATA __read_from_sps: RuntimeError")
+            print("[SPS_CLIENT_DATA][__read_from_sps] RuntimeError")
 
     def __write_bool_to_sps(
         self,
@@ -137,7 +139,7 @@ class SpsClientData:
                 data=data,
             )
         except Snap7Exception as _:
-            print("YOUR STUPID!!!")
+            print("[SPS_CLIENT_DATA][__read_from_sps] Snap7Exception")
             pass
 
     def update_from_sps(self) -> None:
@@ -219,7 +221,7 @@ class SpsClientData:
             if data.type == spsreal:
                 self.__write_to_sps(data, set_real)
             return
-        print("NO DATA")
+        print("[SPS_CLIENT_DATA][write] NO DATA")
 
     def read(self, name: str, data_type: Type[spstypes]) -> spstypes:
         if self.has_key(name):
