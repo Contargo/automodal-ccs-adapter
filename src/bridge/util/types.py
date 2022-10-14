@@ -1,13 +1,9 @@
 from dataclasses import dataclass
-from typing import NamedTuple, Union, List, Optional, Type, Generic
+from typing import Generic, List, NamedTuple, Optional, Type, Union
 
 from snap7.types import Areas
 
-from bridge.sps.types import (
-    SPSClientQueueMSGsMeta,
-    spstypes,
-    spstypevar,
-)
+from bridge.sps.types import SPSClientQueueMSGsMeta, spstypes, spstypevar
 
 DBNumber = int
 Address = int

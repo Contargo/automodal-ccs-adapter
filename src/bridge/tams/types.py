@@ -5,7 +5,7 @@ from datetime import datetime
 from dataclasses_json import dataclass_json
 
 from bridge.sps.types import spstypes
-from bridge.tams.enums import CCSJobType, CSSSiteType, CCSFeatureType
+from bridge.tams.enums import CCSFeatureType, CCSJobType, CSSSiteType
 
 
 def guid() -> str:
@@ -76,17 +76,19 @@ class CCSMetricEntry:
     name: str
     datatype: str
     value: spstypes
-    
+
+
 @dataclass_json
 @dataclass
 class CCSMetric:
     # in mm
-    event: str = field(default_factory=CCSEvent)
+    event: CCSEvent = field(default_factory=CCSEvent)
     metrics: list[CCSMetricEntry] = field(default_factory=list)
+
 
 @dataclass_json
 @dataclass
 class CCSCraneDetails:
     # in mm
-    event: str = field(default_factory=CCSEvent)
-    features: list[CCSFeatureType] = field(default_factory=list)
+    event: CCSEvent = field(default_factory=CCSEvent)
+    features: list[CCSFeature] = field(default_factory=list)

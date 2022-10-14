@@ -109,6 +109,7 @@ module = [
     "prctl",
     "paho.*",
     "snap7.*",
-    "strenum"
+    "strenum",
+    "flask_cors",
 ]
 ignore_missing_imports = true

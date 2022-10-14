@@ -1,11 +1,11 @@
 from typing import Optional
 
-from bridge.sps.types import DBItem, spsint, spsreal, spsbool, spsbyte, spsdint
+from bridge.sps.types import DBItem, spsbool, spsbyte, spsdint, spsint, spsreal
 
 db_items = [
-    DBItem(dbnumber=4, start=8, name="WegLandseite", type=spsdint),
-    DBItem(dbnumber=4, start=12, name="WegWasserSeite", type=spsdint),
-    DBItem(dbnumber=4, start=18, name="WegKatze", type=spsdint),
+    #    DBItem(dbnumber=4, start=8, name="WegLandseite", type=spsdint),
+    #    DBItem(dbnumber=4, start=12, name="WegWasserSeite", type=spsdint),
+    #    DBItem(dbnumber=4, start=18, name="WegKatze", type=spsdint),
     DBItem(dbnumber=2500, start=0, name="TriggerwordRecv", type=spsint),
     DBItem(dbnumber=2500, start=2, name="WatchdogRecv", type=spsbool, bit_index=0),
     DBItem(dbnumber=2500, start=4, name="JobCoordinatesZ", type=spsdint),
@@ -25,6 +25,8 @@ db_items = [
     DBItem(dbnumber=2500, start=28, name="JobStormPin", type=spsbool, bit_index=4),
     DBItem(dbnumber=2500, start=30, name="SandStatus", type=spsbyte),
     DBItem(dbnumber=2500, start=30, name="SandFusionStatus", type=spsbool, bit_index=0),
+    DBItem(dbnumber=2500, start=32, name="JobCommand", type=spsbyte),
+    DBItem(dbnumber=2500, start=32, name="JobCancel", type=spsbool, bit_index=0),
     DBItem(dbnumber=2501, start=0, name="TriggerwordSend", type=spsint),
     DBItem(dbnumber=2501, start=2, name="WatchdogSend", type=spsbool, bit_index=0),
     DBItem(dbnumber=2501, start=4, name="CraneCoordinatesZ", type=spsdint),
@@ -34,9 +36,7 @@ db_items = [
     DBItem(dbnumber=2501, start=20, name="Status", type=spsbyte),
     DBItem(dbnumber=2501, start=20, name="StatusPowerOn", type=spsbool, bit_index=0),
     DBItem(dbnumber=2501, start=20, name="StatusManuelMode", type=spsbool, bit_index=1),
-    DBItem(
-        dbnumber=2501, start=20, name="StatusAutomaticMode", type=spsbool, bit_index=2
-    ),
+    DBItem(dbnumber=2501, start=20, name="StatusAutomaticMode", type=spsbool, bit_index=2),
     DBItem(dbnumber=2501, start=20, name="StatusWarning", type=spsbool, bit_index=3),
     DBItem(dbnumber=2501, start=20, name="StatusError", type=spsbool, bit_index=4),
     DBItem(
@@ -69,9 +69,8 @@ db_items = [
 ]
 
 
-def get_item_with_name(name: str) -> DBItem | None:
+def get_item_with_name(name: str) -> DBItem:
     for item in db_items:
         if item.name == name:
             return item
-    print(f"DB_ITEM: item not found {name=}")
-    return None
+    raise ValueError("item name not in db_items")

@@ -1,27 +1,37 @@
 import time
 from random import randint, uniform
-from threading import Thread, Event
+from threading import Event, Thread
 
 from snap7.server import Server
 from snap7.types import (
-    wordlen_to_ctypes,
     S7WLByte,
-    srvAreaPA,
-    srvAreaMK,
-    srvAreaPE,
     srvAreaDB,
+    srvAreaMK,
+    srvAreaPA,
+    srvAreaPE,
+    wordlen_to_ctypes,
 )
-from snap7.util import set_real, set_int, set_bool, set_dint, get_bool, get_int, set_byte, get_dint
+from snap7.util import (
+    get_bool,
+    get_byte,
+    get_dint,
+    get_int,
+    set_bool,
+    set_byte,
+    set_dint,
+    set_int,
+    set_real,
+)
 
 from bridge.sps.data import db_items, get_item_with_name
-from bridge.sps.types import spsint, spsreal, spsbool, spsdint, spsbyte
+from bridge.sps.types import spsbool, spsbyte, spsdint, spsint, spsreal
 
 
 class SpsServer:
-
     __dbs: dict[int, bytearray] = {}
 
-    def __init__(self) -> None:
+    def __init__(self, verbose: bool = False) -> None:
+        self.verbose = verbose
         self.shutdown_event = Event()
         self.server = Server()
         self.globaldata = (wordlen_to_ctypes[S7WLByte] * 10)()
@@ -40,7 +50,8 @@ class SpsServer:
 
     def generate_data(self) -> None:
         for item in db_items:
-            print(f"SERVER: {item=}")
+            if self.verbose:
+                print(f"[SPS_SERVER][generate_data]: {item=}")
             if item.type is spsreal:
                 set_real(
                     self.__dbs[item.dbnumber], item.start, round(uniform(0, 99), 2)
@@ -74,71 +85,93 @@ class SpsServer:
         # print("SPS_SERVER: is running")
         self.server.start()
 
-    def _set_bool(self, name: str, value: bool):
+    def _set_bool(self, name: str, value: bool) -> None:
         item = get_item_with_name(name)
         # print(f"_set_bool: {item=}")
         set_bool(self.__dbs[item.dbnumber], item.start, item.bit_index, value)
 
-    def _get_bool(self, name: str):
+    def _get_bool(self, name: str) -> bool:
         item = get_item_with_name(name)
         value = get_bool(self.__dbs[item.dbnumber], item.start, item.bit_index)
         # print(f"_get_bool: {value=} {item=}")
         return value
 
-    def _set_int(self, name: str, value: int):
+    def _set_int(self, name: str, value: int) -> None:
         item = get_item_with_name(name)
         # print(f"_set_int: {item=}")
         set_int(self.__dbs[item.dbnumber], item.start, value)
 
+    def _get_byte(self, name: str) -> bytes:
+        item = get_item_with_name(name)
+        value = get_byte(self.__dbs[item.dbnumber], item.start)
+        # print(f"_get_int: {value=} {item=}")
+        return value
+
+    def _set_byte(self, name: str, value: int) -> None:
+        item = get_item_with_name(name)
+        # print(f"_set_int: {item=}")
+        set_byte(self.__dbs[item.dbnumber], item.start, value)
+
     def _get_int(self, name: str) -> int:
         item = get_item_with_name(name)
         value = get_int(self.__dbs[item.dbnumber], item.start)
-        #print(f"_get_int: {value=} {item=}")
+        # print(f"_get_int: {value=} {item=}")
         return value
 
-    def _set_dint(self, name: str, value: int):
+    def _set_dint(self, name: str, value: int) -> None:
         item = get_item_with_name(name)
-        print(f"_set_dint: {item=}")
+        print(f"[SPS_SERVER][_set_dint] {item=}")
         set_dint(self.__dbs[item.dbnumber], item.start, value)
 
     def _get_dint(self, name: str) -> int:
         item = get_item_with_name(name)
-        print(f"_get_int: {item=}")
+        print(f"[SPS_SERVER][_get_dint] {item=}")
         value = get_dint(self.__dbs[item.dbnumber], item.start)
         return value
 
-    def set_defaults(self):
+    def set_defaults(self) -> None:
         self._set_bool("JobStatusDone", True)
         self._set_bool("JobStatusInProgress", False)
         self._set_bool("JobNewJob", False)
 
     def worker(self) -> None:
-        
+
         self._set_bool("StatusPowerOn", True)
         self._set_bool("StatusManuelMode", False)
         self._set_bool("StatusAutomaticMode", True)
         self._set_bool("StatusWarning", False)
         self._set_bool("StatusError", False)
-        
+        self._set_byte("JobCommand", 0x00)
+        self._set_bool("SandFusionStatus", True)
+
         while not self.shutdown_event.is_set():
+            if self._get_bool("JobCancel"):  # cancel
+                print(f"[SPS_SERVER][worker] cancel but have no active job")
+                self._set_bool("JobCancel", False)
             if self._get_int("JobNewJob"):
-                print(f"SERVER: new job")
+                print(f"[SPS_SERVER][worker] new job")
                 self._set_bool("JobStatusDone", False)
                 self._set_bool("JobStatusInProgress", True)
                 self._set_int("JobNewJob", 0)
-                self.shutdown_event.wait(10)
+                for _ in range(20):
+                    self.shutdown_event.wait(0.5)
+                    if self._get_bool("JobCancel"):  # cancel
+                        self.shutdown_event.wait(2)
+                        self._set_bool("JobCancel", False)
+                        print(f"[SPS_SERVER][worker] cancel active job")
+                        break
                 self._set_bool("JobStatusDone", True)
                 self._set_bool("JobStatusInProgress", False)
                 self._set_dint("CraneCoordinatesZ", 1000)
                 self._set_dint("CraneCoordinatesY", 1000)
                 self._set_dint("CraneCoordinatesX", 1000)
-            #event = self.server.pick_event()
-            #if event:
+            # event = self.server.pick_event()
+            # if event:
             #   print(f"SPS_SERVER: {self.server.event_text(event)}")
             time.sleep(0.1)
 
     def shutdown(self) -> None:
-        print("SPS_SERVER: shutdown")
+        print("[SPS_SERVER][shutdown] shutdown")
         self.shutdown_event.set()
         self.worker_thread.join()
         self.server.stop()

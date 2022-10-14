@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Union, TypeVar
+from typing import TypeVar, Union
 
 
 @dataclass
@@ -11,18 +11,26 @@ class SPSClientQueueMSGsMeta:
 
 spsbool = bool
 
+
 class spsbyte(bytes):
     pass
 
 
 class spsword(bytes):
     pass
+
+
 class spsint(int):
     pass
+
+
 class spsdint(int):
     pass
+
+
 class spsreal(float):
     pass
+
 
 spstypes = Union[  # pylint: disable=invalid-name
     spsbool, spsbyte, spsword, spsint, spsdint, spsreal
