@@ -38,7 +38,6 @@ class _JobState:
 
 class CCSJobState:
     __running_job: CCSJob | None = None
-    __sps_status: str = SPSStatus.INIT
     __job_status: str = CCSJobStatus.DONE
     __job_created: str = ""
 
@@ -50,12 +49,6 @@ class CCSJobState:
 
     def get_job(self) -> CCSJob | None:
         return self.__running_job
-
-    def sps_status(self) -> str:
-        return self.__sps_status
-
-    def set_sps_status(self, status: str) -> None:
-        self.__sps_status = status
 
     def get_job_as_json(self) -> str:
         return dataclass_to_json(self.__running_job)
@@ -69,21 +62,12 @@ class CCSJobState:
         if not self.has_job():
             self.__running_job = job
             self.__job_created = datetime.now().isoformat()
-            self.__job_status = CCSJobStatus.INPROGRESS
             return "OK"
         return "has job"
 
     def job_done(self) -> None:
         print("[JOB][job_done] called")
-        self.__job_status = CCSJobStatus.DONE
         self.__running_job = None
-        self.__sps_status = SPSStatus.WAIT
-
-    def cancel_job(self) -> None:
-        print("[JOB][cancel_job] called")
-        self.__job_status = CCSJobStatus.CANCELED
-        self.__running_job = None
-        self.__sps_status = SPSStatus.WAIT
 
     def get_state_as_json(self) -> str:
         if self.__running_job:

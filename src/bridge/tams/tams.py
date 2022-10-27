@@ -11,9 +11,9 @@ from bridge.sps.client import SpsClient
 from bridge.sps.data import db_items
 from bridge.sps.enums import SPSStatus
 from bridge.sps.types import spsbool, spsbyte, spsdint, spsint
-from bridge.tams.enums import CCSFeatureType, CCSJobType
+from bridge.tams.enums import CCSFeatureType, CCSJobType, CCSJobStatus
 from bridge.tams.helper import dataclass_to_json, generate_feature, generate_metadata
-from bridge.tams.job import CCSJobState
+from bridge.tams.job import CCSJobState, _JobState
 from bridge.tams.types import (
     CCSCraneDetails,
     CCSEvent,
@@ -33,7 +33,6 @@ class CCS:
         self.sps_client = sps_client
         self.tams_url = tams_url
         self.shutdown_event = Event()
-        self.worker_state = "wait_for_job"
         self.app = Flask(
             "ccs",
         )
@@ -53,17 +52,17 @@ class CCS:
             daemon=True,
         )
 
-        self.worker_ccs: Thread = Thread(
-            target=self.ccs,
+        self.worker_metric: Thread = Thread(
+            target=self.metric,
             args=(),
-            name="CCS Worker",
+            name="Metric Worker",
             daemon=True,
         )
 
     def start(self) -> None:
         self.worker_rest.start()
         self.worker_sps.start()
-        self.worker_ccs.start()
+        self.worker_metric.start()
 
     def add_endpoints(self) -> None:
         self.app.add_url_rule(
@@ -77,72 +76,56 @@ class CCS:
         self.app.run(host="0.0.0.0", port=9999)
 
     def sps(self) -> None:
-
+        old_value = 255
         while not self.shutdown_event.is_set():
-            if self.worker_state == "wait_for_job":
-                if self.state.sps_status() in [SPSStatus.INIT, SPSStatus.WAIT]:
-                    job = self.state.get_job()
-                    if job is not None:
-                        print("[TAMS][sps] send new job to SPS")
-                        self.state.set_sps_status(SPSStatus.RUNNING)
-                        if job.type == CCSJobType.PICK:
-                            self.sps_client.write_item("JobType", spsbyte(b"\x01"))
-                        if job.type == CCSJobType.DROP:
-                            self.sps_client.write_item("JobType", spsbyte(b"\x02"))
-                        self.sps_client.write_item(
-                            "JobCoordinatesX", spsdint(job.target.x)
-                        )
-                        self.sps_client.write_item(
-                            "JobCoordinatesY", spsdint(job.target.y)
-                        )
-                        self.sps_client.write_item(
-                            "JobCoordinatesZ", spsdint(job.target.z)
-                        )
-                        self.sps_client.write_item("JobSpreaderSize", spsint(20))
-                        self.sps_client.write_item("JobNewJob", spsint(1))
-                        self.worker_state = "wait_for_sps_in_progress"
-            if self.worker_state == "wait_for_sps_in_progress":
-                if self.sps_client.read_value("JobStatusInProgress", spsbool):
-                    self.worker_state = "wait_for_done"
-            if self.worker_state == "wait_for_done":
-                if (
-                    self.state.sps_status() == SPSStatus.RUNNING
-                    and self.sps_client.read_value("JobStatusDone", spsbool)
-                ):
-                    if self.verbose:
-                        print(
-                            f"[TAMS][sps] {self.state.sps_status() == SPSStatus.RUNNING} and {self.sps_client.read_value('JobStatusDone', spsbool)}"
-                        )
+            value = self.sps_client.read_value("JobStatus", spsbyte)
+            if value != old_value:
+                old_value = value
+                print(f"[TAMS][sps worker] {old_value=}, {value=}")
+                if self.sps_client.read_value("JobStatusDone", spsbool):
+                    print("[TAMS][sps worker] JobStatusDone")
                     self.state.job_done()
-                    print("[TAMS][sps] wait for new job from tams")
-                    self.worker_state = "wait_for_job"
-                    # delete old job (and send done status to tams)
-            time.sleep(0.1)
+                self.send_status()
+            time.sleep(1)
 
-    def ccs(self) -> None:
+    def metric(self) -> None:
         while not self.shutdown_event.is_set():
-            self.send_status()
             self.send_metric()
             time.sleep(1)
 
     def job_cancel(self, *args, **kwargs) -> Any:  # type: ignore
-        self.state.cancel_job()
-        self.worker_state = "wait_for_job"
+        self.state.job_done()
         print("[TAMS][job_cancel] called")
         self.sps_client.write_item("JobCommand", spsbyte(b"\x01"))
         return "OK", 200
 
     def job_post(self, *args, **kwargs) -> Any:  # type: ignore
         ret = self.state.set_new_job(request.data.decode("utf-8"))
-
-        print(f"[TAMS][job_post] {ret}")
+        job = self.state.get_job()
+        sps_done = self.sps_client.read_value("JobStatusDone", spsbool)
         if ret == "invalid":
-            return "Invalid input", 405
-        if ret == "has job":
-            return self.state.get_job_as_json(), 409
-        if ret == "OK":
-            return "OK", 200
-        return "unknown error", 500
+            return job, 405
+        if ret == "has job" or not sps_done:
+            return "", 409
+        if job is not None:
+            print("[TAMS][job_post] send new job to SPS")
+            if job.type == CCSJobType.PICK:
+                self.sps_client.write_item("JobType", spsbyte(b"\x01"))
+            if job.type == CCSJobType.DROP:
+                self.sps_client.write_item("JobType", spsbyte(b"\x02"))
+            self.sps_client.write_item(
+                "JobCoordinatesX", spsdint(job.target.x)
+            )
+            self.sps_client.write_item(
+                "JobCoordinatesY", spsdint(job.target.y)
+            )
+            self.sps_client.write_item(
+                "JobCoordinatesZ", spsdint(job.target.z)
+            )
+            self.sps_client.write_item("JobSpreaderSize", spsint(20))
+            self.sps_client.write_item("JobNewJob", spsint(1))
+        print(f"[TAMS][job_post] {job=}")
+        return "OK", 200
 
     def job_get(self) -> Any:
         if self.state.has_job():

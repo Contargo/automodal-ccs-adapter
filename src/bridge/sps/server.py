@@ -160,8 +160,8 @@ class SpsServer:
                         self._set_bool("JobCancel", False)
                         print(f"[SPS_SERVER][worker] cancel active job")
                         break
-                self._set_bool("JobStatusDone", True)
                 self._set_bool("JobStatusInProgress", False)
+                self._set_bool("JobStatusDone", True)
                 self._set_dint("CraneCoordinatesZ", 1000)
                 self._set_dint("CraneCoordinatesY", 1000)
                 self._set_dint("CraneCoordinatesX", 1000)
