@@ -7,7 +7,7 @@ from paho.mqtt.properties import Properties
 from bridge.sand.bridge import get_client_with_reconnect
 
 client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
-client.connect("10.192.0.11")
+client.connect("localhost")
 publish_properties = Properties(PacketTypes.PUBLISH)
 publish_properties.UserProperty = ("datatype", "pickle")
 

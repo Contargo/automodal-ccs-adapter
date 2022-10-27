@@ -12,16 +12,17 @@ from bridge.sps.types import spsbyte, spsdint, spsint, spsreal
 from bridge.util.types import MQTT_Payload, MQTT_Topic
 
 class SandBridge:
-    def __init__(self, sps_client: SpsClient, verbose: bool = False) -> None:
+    def __init__(self, sps_client: SpsClient, mqttip: str, verbose: bool = False) -> None:
 
         self.sps_client = sps_client
         self.shutdown_event = Event()
         self.status = True
         self.old_Status = False
         self.verbose = verbose
+        self.mqttip = mqttip
 
         self.client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
-        self.client.connect("localhost")
+        self.client.connect(mqttip)
         self.client.on_message = self.on_collision_update
         self.client.subscribe("+/+/data/collision")
         self.client.loop_start()
