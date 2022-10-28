@@ -36,7 +36,9 @@ db_items = [
     DBItem(dbnumber=2501, start=20, name="Status", type=spsbyte),
     DBItem(dbnumber=2501, start=20, name="StatusPowerOn", type=spsbool, bit_index=0),
     DBItem(dbnumber=2501, start=20, name="StatusManuelMode", type=spsbool, bit_index=1),
-    DBItem(dbnumber=2501, start=20, name="StatusAutomaticMode", type=spsbool, bit_index=2),
+    DBItem(
+        dbnumber=2501, start=20, name="StatusAutomaticMode", type=spsbool, bit_index=2
+    ),
     DBItem(dbnumber=2501, start=20, name="StatusWarning", type=spsbool, bit_index=3),
     DBItem(dbnumber=2501, start=20, name="StatusError", type=spsbool, bit_index=4),
     DBItem(

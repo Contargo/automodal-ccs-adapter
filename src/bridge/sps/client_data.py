@@ -35,7 +35,9 @@ from .types import (
 
 
 class SpsClientData:
-    def __init__(self, area: Areas, dbnumber: DBNumber, client: Client, verbose: bool = False) -> None:
+    def __init__(
+        self, area: Areas, dbnumber: DBNumber, client: Client, verbose: bool = False
+    ) -> None:
         self.verbose = verbose
         self.raw_data: bytearray = bytearray()
         self.data: list[SPSDataItem[spstypes]] = []
@@ -153,18 +155,18 @@ class SpsClientData:
                 byte_data = get_byte(self.raw_data, item.start)
                 if type(byte_data) == int:
                     byte_data = byte_data.to_bytes(1, byteorder="little")  # type: ignore
-                self.data[number].value = byte_data # type: ignore[assignment]
+                self.data[number].value = byte_data  # type: ignore[assignment]
             if item.type == spsword:
                 word_data = get_word(self.raw_data, item.start)
                 if type(word_data) == int:
                     word_data = word_data.to_bytes(2, byteorder="lit tle")  # type: ignore
-                self.data[number].value = word_data # type: ignore[assignment]
+                self.data[number].value = word_data  # type: ignore[assignment]
             if item.type == spsint:
-                self.data[number].value = get_int(self.raw_data, item.start) # type: ignore[assignment]
+                self.data[number].value = get_int(self.raw_data, item.start)  # type: ignore[assignment]
             if item.type == spsdint:
-                self.data[number].value = get_dint(self.raw_data, item.start) # type: ignore[assignment]
+                self.data[number].value = get_dint(self.raw_data, item.start)  # type: ignore[assignment]
             if item.type == spsreal:
-                self.data[number].value = get_real(self.raw_data, item.start) # type: ignore[assignment]
+                self.data[number].value = get_real(self.raw_data, item.start)  # type: ignore[assignment]
 
     def has_key(self, key: str) -> bool:
         for data in self.data:
@@ -209,11 +211,11 @@ class SpsClientData:
                     "no boolean write is allowed! Use Byte representation."
                 )
             if data.type == spsbyte:
-                data.value = int.from_bytes(data.value, "big") # type: ignore[assignment]
-                self.__write_to_sps(data, set_byte) # type: ignore[arg-type]
+                data.value = int.from_bytes(data.value, "big")  # type: ignore[assignment]
+                self.__write_to_sps(data, set_byte)  # type: ignore[arg-type]
             if data.type == spsword:
-                data.value = int.from_bytes(data.value, "big") # type: ignore[assignment]
-                self.__write_to_sps(data, set_word) # type: ignore[arg-type]
+                data.value = int.from_bytes(data.value, "big")  # type: ignore[assignment]
+                self.__write_to_sps(data, set_word)  # type: ignore[arg-type]
             if data.type == spsint:
                 self.__write_to_sps(data, set_int)  # type: ignore[arg-type]
             if data.type == spsdint:

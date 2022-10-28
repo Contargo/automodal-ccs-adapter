@@ -49,7 +49,9 @@ class SpsClient:
     def define_data(self) -> None:
         for item in db_items:
             if self.verbose:
-                print(f"[SPS_CLIENT][define_data] {item=}, {self.__db[item.dbnumber].dbnumber}")
+                print(
+                    f"[SPS_CLIENT][define_data] {item=}, {self.__db[item.dbnumber].dbnumber}"
+                )
             self.__db[item.dbnumber].define_data(
                 name=item.name,
                 start=item.start,

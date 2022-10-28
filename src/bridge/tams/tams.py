@@ -28,7 +28,12 @@ class CCS:
     type: str = "crane"
     name: str = "PSKran"
 
-    def __init__(self, sps_client: SpsClient, tams_url: str = "http://localhost:9998", verbose: bool = False):
+    def __init__(
+        self,
+        sps_client: SpsClient,
+        tams_url: str = "http://localhost:9998",
+        verbose: bool = False,
+    ):
         self.verbose = verbose
         self.sps_client = sps_client
         self.tams_url = tams_url
@@ -76,7 +81,7 @@ class CCS:
         self.app.run(host="0.0.0.0", port=9999)
 
     def sps(self) -> None:
-        old_value = 255
+        old_value = spsint(255)
         while not self.shutdown_event.is_set():
             value = self.sps_client.read_value("JobStatus", spsbyte)
             if value != old_value:
@@ -113,15 +118,9 @@ class CCS:
                 self.sps_client.write_item("JobType", spsbyte(b"\x01"))
             if job.type == CCSJobType.DROP:
                 self.sps_client.write_item("JobType", spsbyte(b"\x02"))
-            self.sps_client.write_item(
-                "JobCoordinatesX", spsdint(job.target.x)
-            )
-            self.sps_client.write_item(
-                "JobCoordinatesY", spsdint(job.target.y)
-            )
-            self.sps_client.write_item(
-                "JobCoordinatesZ", spsdint(job.target.z)
-            )
+            self.sps_client.write_item("JobCoordinatesX", spsdint(job.target.x))
+            self.sps_client.write_item("JobCoordinatesY", spsdint(job.target.y))
+            self.sps_client.write_item("JobCoordinatesZ", spsdint(job.target.z))
             self.sps_client.write_item("JobSpreaderSize", spsint(20))
             self.sps_client.write_item("JobNewJob", spsint(1))
         print(f"[TAMS][job_post] {job=}")

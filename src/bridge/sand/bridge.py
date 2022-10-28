@@ -11,8 +11,11 @@ from bridge.sps.client import SpsClient
 from bridge.sps.types import spsbyte, spsdint, spsint, spsreal
 from bridge.util.types import MQTT_Payload, MQTT_Topic
 
+
 class SandBridge:
-    def __init__(self, sps_client: SpsClient, mqttip: str, verbose: bool = False) -> None:
+    def __init__(
+        self, sps_client: SpsClient, mqttip: str, verbose: bool = False
+    ) -> None:
 
         self.sps_client = sps_client
         self.shutdown_event = Event()
@@ -42,7 +45,6 @@ class SandBridge:
     def start(self) -> None:
         self.worker_thread.start()
         self.worker_status_thread.start()
-
 
     def on_collision_update(self, _client, _: MQTT_Topic, msg: MQTTMessage) -> None:
         # todo: payload format. Aktuell nur ein Bool ob danger or not
@@ -78,13 +80,13 @@ class SandBridge:
         histerese = 50  # 5 cm
 
         while not self.shutdown_event.is_set():
-            katz = self.sps_client.read_value("CraneCoordinatesY", spsdint) 
-            crane = self.sps_client.read_value("CraneCoordinatesX", spsdint) 
-            spreader = self.sps_client.read_value("CraneCoordinatesZ", spsdint) 
+            katz = self.sps_client.read_value("CraneCoordinatesY", spsdint)
+            crane = self.sps_client.read_value("CraneCoordinatesX", spsdint)
+            spreader = self.sps_client.read_value("CraneCoordinatesZ", spsdint)
             group = "katze"
 
             # for us we need only changes on the katz value
-            if abs(old_katz - katz) > histerese: # type: ignore
+            if abs(old_katz - katz) > histerese:  # type: ignore
                 self.client.publish(
                     topic=f"bridge/{group}/data/position",
                     payload=pickle.dumps(

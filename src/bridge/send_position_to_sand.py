@@ -10,12 +10,19 @@ from bridge.sand.bridge import get_client_with_reconnect
 
 def get_args() -> Any:
     parser = ArgumentParser(description="")
-    parser.add_argument('sensor_group', type=str)
-    parser.add_argument('x_value', type=int)
-    parser.add_argument('y_value', type=int)
-    parser.add_argument('z_value', type=int)
-    parser.add_argument("--mqttip", type=str, default="localhost", help="IP of mqtt broker for sand feature")
-    parser.add_argument("-v", "--verbose", action="store_true", help="verbose console logging")
+    parser.add_argument("sensor_group", type=str)
+    parser.add_argument("x_value", type=int)
+    parser.add_argument("y_value", type=int)
+    parser.add_argument("z_value", type=int)
+    parser.add_argument(
+        "--mqttip",
+        type=str,
+        default="localhost",
+        help="IP of mqtt broker for sand feature",
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="verbose console logging"
+    )
     return parser.parse_args()
 
 
@@ -42,9 +49,10 @@ def main() -> Any:
                 "z_position": args.z_value,
             }
         ),
-        properties=publish_properties
+        properties=publish_properties,
     )
 
     client.disconnect()
+
 
 main()

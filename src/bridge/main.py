@@ -17,9 +17,16 @@ def get_args() -> Any:
     parser.add_argument("--ccs", action="store_true", help="start ccs")
     parser.add_argument("--sand", action="store_true", help="start sand bridge")
     parser.add_argument("--spsip", type=str, default="127.0.0.1", help="IP of SPS")
-    parser.add_argument("--mqttip", type=str, default="localhost", help="IP of mqtt broker for sand feature")
+    parser.add_argument(
+        "--mqttip",
+        type=str,
+        default="localhost",
+        help="IP of mqtt broker for sand feature",
+    )
     parser.add_argument("-l", "--log", action="store_true", help="log metrics to csv")
-    parser.add_argument("-v", "--verbose", action="store_true", help="verbose console logging")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="verbose console logging"
+    )
     parser.add_argument("--logwebcalls", action="store_true", help="log web calls")
     return parser.parse_args()
 
@@ -37,7 +44,8 @@ def run() -> None:
     if not args.logwebcalls:
         print("[MAIN] disable werkzeug logging")
         import logging
-        log = logging.getLogger('werkzeug')
+
+        log = logging.getLogger("werkzeug")
         log.setLevel(logging.ERROR)
     try:
         if args.server:

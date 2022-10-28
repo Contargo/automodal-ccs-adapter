@@ -6,6 +6,7 @@ from bridge.sps.client import SpsClient
 from bridge.sps.data import db_items
 from datetime import datetime
 
+
 class Logger:
     def __init__(self, sps_client: SpsClient):
         self.sps_client = sps_client
