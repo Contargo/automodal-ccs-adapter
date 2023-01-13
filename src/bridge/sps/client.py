@@ -87,7 +87,7 @@ class SpsClient:
 
     def connect(self) -> None:
         try:
-            print(f"SPS_CLIENT][connect] {self.ip_address=}")
+            print(f"[SPS_CLIENT][connect] ip_address {self.ip_address}")
             if self.ip_address == "127.0.0.1":
                 print("[SPS_CLIENT][connect] is localhost")
                 self.client.connect(self.ip_address, 0, 1)

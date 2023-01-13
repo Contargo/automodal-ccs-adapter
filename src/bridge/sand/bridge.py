@@ -23,12 +23,8 @@ class SandBridge:
         self.old_Status = False
         self.verbose = verbose
         self.mqttip = mqttip
-
-        self.client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
-        self.client.connect(mqttip)
-        self.client.on_message = self.on_collision_update
-        self.client.subscribe("+/+/data/collision")
-        self.client.loop_start()
+        self.client: Client | None = None
+        
         self.worker_thread: Thread = Thread(
             target=self.worker,
             args=(),
@@ -43,6 +39,17 @@ class SandBridge:
         )
 
     def start(self) -> None:
+        self.client = get_client_with_reconnect(client_id="mqtt_sps_bridge")
+        try:
+            self.client.connect(self.mqttip)
+        except ConnectionRefusedError:
+            print()
+            print("No Connection to MQTT Broker")
+            print("is MQTT Broker running? ")
+            exit()
+        self.client.on_message = self.on_collision_update
+        self.client.subscribe("+/+/data/collision")
+        self.client.loop_start()
         self.worker_thread.start()
         self.worker_status_thread.start()
 

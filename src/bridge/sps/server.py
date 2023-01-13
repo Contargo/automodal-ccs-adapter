@@ -153,13 +153,14 @@ class SpsServer:
                 self._set_bool("JobStatusDone", False)
                 self._set_bool("JobStatusInProgress", True)
                 self._set_int("JobNewJob", 0)
-                for _ in range(20):
-                    self.shutdown_event.wait(0.5)
-                    if self._get_bool("JobCancel"):  # cancel
-                        self.shutdown_event.wait(2)
-                        self._set_bool("JobCancel", False)
-                        print(f"[SPS_SERVER][worker] cancel active job")
-                        break
+                for idx in range(5):
+                    self.shutdown_event.wait(1)
+                    print(f"[SPS_SERVER][worker] {idx}")
+                    #if self._get_bool("JobCancel"):  # cancel
+                    #    self.shutdown_event.wait(2)
+                    #    self._set_bool("JobCancel", False)
+                    #    print(f"[SPS_SERVER][worker] cancel active job")
+                    #    break
                 self._set_bool("JobStatusInProgress", False)
                 self._set_bool("JobStatusDone", True)
                 self._set_dint("CraneCoordinatesZ", 1000)

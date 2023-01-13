@@ -38,8 +38,13 @@ class _JobState:
 
 class CCSJobState:
     __running_job: CCSJob | None = None
-    __job_status: str = CCSJobStatus.DONE
     __job_created: str = ""
+
+    @property
+    def __job_status(self) -> CCSJobStatus:
+        if self.has_job():
+            return CCSJobStatus.INPROGRESS
+        return CCSJobStatus.DONE
 
     def __init__(self) -> None:
         pass
