@@ -1,0 +1,20 @@
+[Unit]
+Description=automodal-ccs-adapter
+After=syslog.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/debauer/automodal-ccs-adapter
+ExecStart=/home/debauer/.local/bin/poetry run sudo python src/bridge/main.py --ccs --server
+Environment=PYTHONUNBUFFERED=1
+User=debauer
+Group=debauer
+
+SyslogIdentifier=automodal-ccs-adapter
+StandardOutput=syslog
+StandardError=syslog
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
