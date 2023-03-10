@@ -4,11 +4,11 @@ After=syslog.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/debauer/automodal-ccs-adapter
-ExecStart=/home/debauer/.local/bin/poetry run sudo python src/bridge/main.py --ccs --server
+WorkingDirectory=/home/automodal-ccs-adapter/automodal-ccs-adapter
+ExecStart=/home/automodal-ccs-adapter/.local/bin/poetry run sudo python src/bridge/main.py --ccs --server
 Environment=PYTHONUNBUFFERED=1
-User=debauer
-Group=debauer
+User=automodal-ccs-adapter
+Group=automodal-ccs-adapter
 
 SyslogIdentifier=automodal-ccs-adapter
 StandardOutput=syslog

@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from logging import CRITICAL, getLogger
 from typing import Any
 
-from bridge.logger.logger import Logger
+from logger.logger import Logger
 from bridge.sand.bridge import SandBridge
 from bridge.sps.client import SpsClient
 from bridge.sps.server import SpsServer

@@ -143,6 +143,7 @@ class SpsServer:
         self._set_bool("StatusError", False)
         self._set_byte("JobCommand", 0x00)
         self._set_bool("SandFusionStatus", True)
+        self._set_int("JobNewJob", 0)
 
         while not self.shutdown_event.is_set():
             if self._get_bool("JobCancel"):  # cancel
@@ -153,22 +154,23 @@ class SpsServer:
                 self._set_bool("JobStatusDone", False)
                 self._set_bool("JobStatusInProgress", True)
                 self._set_int("JobNewJob", 0)
-                for idx in range(5):
+                for idx in range(10):
                     self.shutdown_event.wait(1)
-                    print(f"[SPS_SERVER][worker] {idx}")
-                    #if self._get_bool("JobCancel"):  # cancel
-                    #    self.shutdown_event.wait(2)
-                    #    self._set_bool("JobCancel", False)
-                    #    print(f"[SPS_SERVER][worker] cancel active job")
-                    #    break
+                    if self.verbose:
+                        print(f"[SPS_SERVER][worker] job running for {idx + 1} seconds")
+                    if self._get_bool("JobCancel"):
+                        self._set_bool("JobCancel", False)
+                        print(f"[SPS_SERVER][worker] cancel active job")
+                        break
                 self._set_bool("JobStatusInProgress", False)
                 self._set_bool("JobStatusDone", True)
                 self._set_dint("CraneCoordinatesZ", 1000)
                 self._set_dint("CraneCoordinatesY", 1000)
                 self._set_dint("CraneCoordinatesX", 1000)
-            # event = self.server.pick_event()
-            # if event:
-            #   print(f"SPS_SERVER: {self.server.event_text(event)}")
+            if self.verbose:
+                event = self.server.pick_event()
+                if event:
+                    print(f"SPS_SERVER: {self.server.event_text(event)}")
             time.sleep(0.1)
 
     def shutdown(self) -> None:
