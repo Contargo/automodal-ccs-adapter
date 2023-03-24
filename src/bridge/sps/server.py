@@ -1,3 +1,4 @@
+from __future__ import annotations
 import time
 from random import randint, uniform
 from threading import Event, Thread

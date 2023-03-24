@@ -1,6 +1,9 @@
+from __future__ import annotations
 import inspect
 from functools import partial
 from typing import Any, Callable, List, Optional, Type
+
+
 
 from snap7.client import Client
 from snap7.exceptions import Snap7Exception

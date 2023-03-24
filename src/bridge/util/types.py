@@ -33,10 +33,10 @@ class SpsQueueItem(NamedTuple):
 class MqttQueueItem(NamedTuple):
     name: str
     meta: SPSClientQueueMSGsMeta
-    data: bool | int | Position
+    data: bool 
 
 
 Collision = bool
 
 MQTT_Topic = str  # pylint: disable=invalid-name
-MQTT_Payload = Union[list[str], str]  # pylint: disable=invalid-name
+MQTT_Payload = Union[List[str], str]  # pylint: disable=invalid-name

@@ -15,7 +15,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.8"
 paho-mqtt = { version = "1.6.1" }
 python-snap7 = "^1.1"
 overrides = "^6.1.0"
